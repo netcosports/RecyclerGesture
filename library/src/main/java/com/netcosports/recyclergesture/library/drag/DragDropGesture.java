@@ -33,10 +33,12 @@ public final class DragDropGesture extends RecyclerGesture {
      * @param recyclerView recyclerView on which gesture is detected.
      * @param adapter      data of the recyclerView.
      * @param dragBehavior behavior to adopt while dragging.
+     * @param strategy     drag strategy.
      */
-    private DragDropGesture(RecyclerView recyclerView, RecyclerArrayAdapter adapter, DragBehavior dragBehavior) {
+    private DragDropGesture(RecyclerView recyclerView, RecyclerArrayAdapter adapter,
+                            DragBehavior dragBehavior, DragStrategy strategy) {
         super();
-        dragDropListener = new DragDropListener(recyclerView, adapter, dragBehavior);
+        dragDropListener = new DragDropListener(recyclerView, adapter, dragBehavior, strategy);
         recyclerView.addOnItemTouchListener(dragDropListener);
     }
 
@@ -67,12 +69,18 @@ public final class DragDropGesture extends RecyclerGesture {
         private DragBehavior dragBehavior;
 
         /**
+         * Define which items are draggable.
+         */
+        private DragStrategy dragStrategy;
+
+        /**
          * Builder pattern.
          */
         public Builder() {
             this.attachedRecyclerView = null;
             this.recyclerArrayAdapter = null;
             this.dragBehavior = null;
+            this.dragStrategy = null;
         }
 
         /**
@@ -94,6 +102,17 @@ public final class DragDropGesture extends RecyclerGesture {
          */
         public Builder with(RecyclerArrayAdapter adapter) {
             this.recyclerArrayAdapter = adapter;
+            return this;
+        }
+
+        /**
+         * Apply drag strategy to customize which items are draggable.
+         *
+         * @param strategy drag strategy.
+         * @return builder to chain param.
+         */
+        public Builder apply(DragStrategy strategy) {
+            this.dragStrategy = strategy;
             return this;
         }
 
@@ -135,7 +154,12 @@ public final class DragDropGesture extends RecyclerGesture {
                 this.dragBehavior = new DragBehaviorVertical();
             }
 
-            return new DragDropGesture(this.attachedRecyclerView, this.recyclerArrayAdapter, this.dragBehavior);
+            if (this.dragStrategy == null) {
+                this.dragStrategy = new DragStrategy();
+            }
+
+            return new DragDropGesture(this.attachedRecyclerView, this.recyclerArrayAdapter,
+                    this.dragBehavior, this.dragStrategy);
         }
     }
 }

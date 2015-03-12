@@ -86,6 +86,11 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
      */
     private DragBehavior dragBehavior;
 
+    /**
+     * Strategy used to enable or disable drag on specific items.
+     */
+    private DragStrategy dragStrategy;
+
 
     /**
      * Drag and drop listener.
@@ -93,10 +98,13 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
      * @param recyclerView recycler view on which listener will be applied.
      * @param adapter      adapter.
      * @param dragBehavior behavior to adopt while dragging.
+     * @param dragStrategy strategy used to enable drag on items.
      */
-    public DragDropListener(RecyclerView recyclerView, RecyclerArrayAdapter adapter, DragBehavior dragBehavior) {
+    public DragDropListener(RecyclerView recyclerView, RecyclerArrayAdapter adapter,
+                            DragBehavior dragBehavior, DragStrategy dragStrategy) {
         this.dragBehavior = dragBehavior;
         this.recyclerView = recyclerView;
+        this.dragStrategy = dragStrategy;
         this.adapter = adapter;
 
         dragging = false;
@@ -176,12 +184,18 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
 
     private void startDrag() {
         View viewUnder = recyclerView.findChildViewUnder(downX, downY);
+        mobileViewCurrentPos = recyclerView.getChildPosition(viewUnder);
         if (viewUnder == null) {
             return;
         }
+
+        // check strategy to know if the current item is draggable.
+        if (!dragStrategy.isItemDraggable(mobileViewCurrentPos)) {
+            return;
+        }
+
         dragging = true;
 
-        mobileViewCurrentPos = recyclerView.getChildPosition(viewUnder);
 
         mobileView = getDraggingView(viewUnder);
         mobileView.setX(viewUnder.getX());

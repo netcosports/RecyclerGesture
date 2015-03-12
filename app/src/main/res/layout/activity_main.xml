@@ -17,9 +17,21 @@
         android:text="@string/main_activity_button_horizontal_drag" />
 
     <Button
+        android:id="@+id/main_activity_drag_horizontal_divider"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/main_activity_button_horizontal_drag_divider" />
+
+    <Button
         android:id="@+id/main_activity_drag_vertical"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/main_activity_button_vertical_drag" />
+
+    <Button
+        android:id="@+id/main_activity_drag_vertical_divider"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/main_activity_button_vertical_drag_divider" />
 
 </LinearLayout>
