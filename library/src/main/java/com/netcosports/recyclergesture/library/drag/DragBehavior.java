@@ -1,0 +1,88 @@
+package com.netcosports.recyclergesture.library.drag;
+
+import android.view.View;
+import android.view.ViewPropertyAnimator;
+
+/**
+ * Interface used to define which behavior to adopt while dragging.
+ */
+public interface DragBehavior {
+
+    /**
+     * Define how the dragged view should move during a drag event.
+     *
+     * @param deltaX      delta between starting x and current x.
+     * @param deltaY      delta between starting y and current y.
+     * @param draggedView view currently dragged.
+     */
+    public void move(float deltaX, float deltaY, View draggedView);
+
+    /**
+     * Define if the dragged current view should be switched with the previous one in the
+     * recycle view.
+     *
+     * @param draggedView  view currently dragged.
+     * @param previousView previous view.
+     * @return true to perform a switch.
+     */
+    public boolean shouldSwitchWithPrevious(View draggedView, View previousView);
+
+    /**
+     * Define if the dragged current view should be switched with the next one in the
+     * recycle view.
+     *
+     * @param draggedView view currently dragged.
+     * @param nextView    previous view.
+     * @return true to perform a switch.
+     */
+    public boolean shouldSwitchWithNext(View draggedView, View nextView);
+
+    /**
+     * Define how the switched view should be animated.
+     * <p/>
+     * See also :
+     * {@link DragBehavior#shouldSwitchWithNext(android.view.View, android.view.View)}
+     * {@link DragBehavior#shouldSwitchWithPrevious(android.view.View, android.view.View)}
+     *
+     * @param viewToAnimate view from witch the animator should be created.
+     * @param dest          current view at the destination.
+     * @return animator started on the viewToSwitch.
+     */
+    public ViewPropertyAnimator getSwitchAnimator(View viewToAnimate, View dest);
+
+    /**
+     * Define how the dragged view will be animated once the user release it.
+     *
+     * @param viewToAnimate view from witch the animator should be created.
+     * @param dest          recycle view destination.
+     * @return animator started on the dragged view when user drop it.
+     */
+    public ViewPropertyAnimator getDropAnimator(View viewToAnimate, View dest);
+
+    /**
+     * Define if the recycle view should be scrolled in the "start" direction while dragging.
+     *
+     * @param recyclerView recycler view where drag event happened.
+     * @param draggedView  view currently dragged.
+     * @return true if a scroll to the "start" direction should be performed.
+     */
+    public boolean shouldStartScrollingToStart(View recyclerView, View draggedView);
+
+    /**
+     * Define if the recycle view should be scrolled in the "end" direction while dragging.
+     *
+     * @param recyclerView recycler view where drag event happened.
+     * @param draggedView  view currently dragged.
+     * @return true if a scroll to the "end" direction should be performed.
+     */
+    public boolean shouldStartScrollingToEnd(View recyclerView, View draggedView);
+
+    /**
+     * Define how recycle view should be scrolled when a scroll is requested.
+     *
+     * @param recyclerView recycler view where drag event happened to perform a scroll.
+     * @param velocity     velocity which should basically be used.
+     */
+    public void scroll(View recyclerView, int velocity);
+
+}

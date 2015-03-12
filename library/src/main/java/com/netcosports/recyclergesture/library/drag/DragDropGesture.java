@@ -32,11 +32,11 @@ public final class DragDropGesture extends RecyclerGesture {
      *
      * @param recyclerView recyclerView on which gesture is detected.
      * @param adapter      data of the recyclerView.
-     * @param orientation  recyclerView orientation.
+     * @param dragBehavior behavior to adopt while dragging.
      */
-    private DragDropGesture(RecyclerView recyclerView, RecyclerArrayAdapter adapter, int orientation) {
+    private DragDropGesture(RecyclerView recyclerView, RecyclerArrayAdapter adapter, DragBehavior dragBehavior) {
         super();
-        dragDropListener = new DragDropListener(recyclerView, adapter, orientation);
+        dragDropListener = new DragDropListener(recyclerView, adapter, dragBehavior);
         recyclerView.addOnItemTouchListener(dragDropListener);
     }
 
@@ -64,7 +64,7 @@ public final class DragDropGesture extends RecyclerGesture {
         /**
          * Gesture orientation.
          */
-        private int orientation;
+        private DragBehavior dragBehavior;
 
         /**
          * Builder pattern.
@@ -72,7 +72,7 @@ public final class DragDropGesture extends RecyclerGesture {
         public Builder() {
             this.attachedRecyclerView = null;
             this.recyclerArrayAdapter = null;
-            orientation = DragDropListener.ORIENTATION_VERTICAL;
+            this.dragBehavior = null;
         }
 
         /**
@@ -103,7 +103,7 @@ public final class DragDropGesture extends RecyclerGesture {
          * @return builder to chain param.
          */
         public Builder horizontal() {
-            this.orientation = DragDropListener.ORIENTATION_HORIZONTAL;
+            this.dragBehavior = new DragBehaviorHorizontal();
             return this;
         }
 
@@ -113,7 +113,7 @@ public final class DragDropGesture extends RecyclerGesture {
          * @return builder to chain param.
          */
         public Builder vertical() {
-            this.orientation = DragDropListener.ORIENTATION_VERTICAL;
+            this.dragBehavior = new DragBehaviorVertical();
             return this;
         }
 
@@ -131,7 +131,11 @@ public final class DragDropGesture extends RecyclerGesture {
                 throw new IllegalStateException("Recycler view can't be null, see Builder.on(recyclerView)");
             }
 
-            return new DragDropGesture(this.attachedRecyclerView, this.recyclerArrayAdapter, this.orientation);
+            if (this.dragBehavior == null) {
+                this.dragBehavior = new DragBehaviorVertical();
+            }
+
+            return new DragDropGesture(this.attachedRecyclerView, this.recyclerArrayAdapter, this.dragBehavior);
         }
     }
 }

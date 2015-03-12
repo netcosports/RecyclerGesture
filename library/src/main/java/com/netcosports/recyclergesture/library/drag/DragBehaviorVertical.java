@@ -1,0 +1,64 @@
+package com.netcosports.recyclergesture.library.drag;
+
+import android.view.View;
+import android.view.ViewPropertyAnimator;
+
+/**
+ * Simple drag behavior for drag only on y axis.
+ */
+public class DragBehaviorVertical implements DragBehavior {
+
+    @Override
+    public void move(float deltaX, float deltaY, View draggedView) {
+        // simple translation on Y axis
+        draggedView.setTranslationY(deltaY);
+    }
+
+    @Override
+    public boolean shouldSwitchWithPrevious(View draggedView, View previousView) {
+        // simply check if the dragged view top is above the view at the top.
+        return previousView != null && previousView.getY() > -1 && draggedView.getY() < previousView.getY();
+    }
+
+    @Override
+    public boolean shouldSwitchWithNext(View draggedView, View nextView) {
+        // simply check if the dragged view bottom is below the view at the bottom.
+        return nextView != null && nextView.getY() > -1 && draggedView.getY() > nextView.getY();
+    }
+
+    @Override
+    public ViewPropertyAnimator getSwitchAnimator(View viewToAnimate, View dest) {
+        // simply move the view to animate on the destination one with a vertical motion.
+        int switchViewTop = dest.getTop();
+        int originalViewTop = viewToAnimate.getTop();
+        int delta = originalViewTop - switchViewTop;
+        viewToAnimate.setTranslationY(-delta);
+        return viewToAnimate.animate().translationYBy(delta);
+    }
+
+    @Override
+    public ViewPropertyAnimator getDropAnimator(View viewToAnimate, View dest) {
+        float y = dest.getY();
+        return viewToAnimate.animate().translationY(y);
+    }
+
+    @Override
+    public boolean shouldStartScrollingToStart(View recyclerView, View draggedView) {
+        int previousBoundary = 0;
+        int hoverViewPosition = (int) draggedView.getY();
+        return hoverViewPosition <= previousBoundary;
+    }
+
+    @Override
+    public boolean shouldStartScrollingToEnd(View recyclerView, View draggedView) {
+        int nextBoundary = recyclerView.getHeight();
+        int hoverViewSize = draggedView.getHeight();
+        int hoverViewPosition = (int) draggedView.getY();
+        return hoverViewPosition + hoverViewSize >= nextBoundary;
+    }
+
+    @Override
+    public void scroll(View recyclerView, int velocity) {
+        recyclerView.scrollBy(0, velocity);
+    }
+}
