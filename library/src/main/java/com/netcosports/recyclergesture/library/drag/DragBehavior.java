@@ -6,7 +6,7 @@ import android.view.ViewPropertyAnimator;
 /**
  * Interface used to define which behavior to adopt while dragging.
  */
-public interface DragBehavior {
+interface DragBehavior {
 
     /**
      * Define how the dragged view should move during a drag event.

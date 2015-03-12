@@ -6,7 +6,7 @@ import android.view.ViewPropertyAnimator;
 /**
  * Simple drag behavior for drag only on y axis.
  */
-public class DragBehaviorVertical implements DragBehavior {
+class DragBehaviorVertical implements DragBehavior {
 
     @Override
     public void move(float deltaX, float deltaY, View draggedView) {
