@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">RecyclerGesture</string>
+
+    <string name="action_settings">Settings</string>
+
+    <string name="main_activity_button_horizontal_drag">Drag horizontal</string>
+    <string name="main_activity_button_vertical_drag">Drag vertical</string>
+
+</resources>
