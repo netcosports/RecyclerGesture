@@ -1,6 +1,5 @@
 package com.netcosports.recyclergesture.library.drag;
 
-import android.util.Log;
 import android.view.View;
 import android.view.ViewPropertyAnimator;
 
@@ -43,13 +42,13 @@ class DragBehaviorHorizontal implements DragBehavior {
     }
 
     @Override
-    public boolean shouldStartScrollingToStart(View recyclerView, float pointerX, float pointerY, View draggedView) {
-        return pointerX <= draggedView.getWidth();
+    public boolean shouldStartScrollingToStart(View recyclerView, View draggedView) {
+        return draggedView.getX() <= 0;
     }
 
     @Override
-    public boolean shouldStartScrollingToEnd(View recyclerView, float pointerX, float pointerY, View draggedView) {
-        return pointerX >= recyclerView.getWidth() - draggedView.getWidth();
+    public boolean shouldStartScrollingToEnd(View recyclerView, View draggedView) {
+        return draggedView.getX() + draggedView.getWidth() >= recyclerView.getWidth();
     }
 
     @Override

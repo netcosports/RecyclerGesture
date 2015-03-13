@@ -63,23 +63,19 @@ interface DragBehavior {
      * Define if the recycle view should be scrolled in the "start" direction while dragging.
      *
      * @param recyclerView recycler view where drag event happened.
-     * @param pointerX     x coordinate of the pointer.
-     * @param pointerY     y coordinate of the pointer.
      * @param draggedView  view currently being dragged.
      * @return true if a scroll to the "start" direction should be performed.
      */
-    public boolean shouldStartScrollingToStart(View recyclerView, float pointerX, float pointerY, View draggedView);
+    public boolean shouldStartScrollingToStart(View recyclerView, View draggedView);
 
     /**
      * Define if the recycle view should be scrolled in the "end" direction while dragging.
      *
      * @param recyclerView recycler view where drag event happened.
-     * @param pointerX     x coordinate of the pointer.
-     * @param pointerY     y coordinate of the pointer.
      * @param draggedView  view currently being dragged.
      * @return true if a scroll to the "end" direction should be performed.
      */
-    public boolean shouldStartScrollingToEnd(View recyclerView, float pointerX, float pointerY, View draggedView);
+    public boolean shouldStartScrollingToEnd(View recyclerView, View draggedView);
 
     /**
      * Define how recycle view should be scrolled when a scroll is requested.

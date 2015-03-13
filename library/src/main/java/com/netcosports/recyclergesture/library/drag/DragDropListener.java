@@ -22,6 +22,7 @@ import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -319,15 +320,15 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
             }
         }
 
-        boolean isScrolling = scrollIfNeeded(currentX, currentY);
-
-        if (isScrolling) {
-            // motion will be handle by the scrolling process.
-            return true;
-        }
+        scrollIfNeeded();
 
         dragBehavior.move(mobileViewX, mobileViewY, mobileView);
-        switchViewsIfNeeded();
+
+        // is scrolling, switch will be handle by the auto scroller since
+        // view will be recycled, closest divider should be refreshed.
+        if (!isScrolling) {
+            switchViewsIfNeeded();
+        }
 
         return true;
     }
@@ -342,8 +343,10 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
 
         if (dragBehavior.shouldSwitchWithPrevious(mobileView, previousView)) {
             doSwitch(previousView, pos, previousPos);
+            Log.d("LARGONNE", "switch previous");
         } else if (dragBehavior.shouldSwitchWithNext(mobileView, nextView)) {
             doSwitch(nextView, pos, nextPos);
+            Log.d("LARGONNE", "switch next");
         }
     }
 
@@ -426,17 +429,15 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
      * Scroll the recycler view while dragging if needed.
      * <p/>
      * See also :
-     * {@link DragBehavior#shouldStartScrollingToStart(android.view.View, float, float, android.view.View)}
-     * {@link DragBehavior#shouldStartScrollingToEnd(android.view.View, float, float, android.view.View)}
+     * {@link DragBehavior#shouldStartScrollingToStart(android.view.View, android.view.View)}
+     * {@link DragBehavior#shouldStartScrollingToEnd(android.view.View, android.view.View)}
      *
      * @return true if the recycler view is being scrolled
      */
-    private boolean scrollIfNeeded(float pointerX, float pointerY) {
+    private boolean scrollIfNeeded() {
 
-        boolean shouldScrollToStart = dragBehavior.shouldStartScrollingToStart(
-                recyclerView, pointerX, pointerY, mobileView);
-        boolean shouldScrollToEnd = dragBehavior.shouldStartScrollingToEnd(
-                recyclerView, pointerX, pointerY, mobileView);
+        boolean shouldScrollToStart = dragBehavior.shouldStartScrollingToStart(recyclerView, mobileView);
+        boolean shouldScrollToEnd = dragBehavior.shouldStartScrollingToEnd(recyclerView, mobileView);
 
         if (shouldScrollToStart && !isScrolling) {
             autoScroller.startScrolling(AutoScroller.START);
@@ -565,9 +566,7 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
                 }
             }
 
-//            dragBehavior.move(nextX, nextY, mobileView);
             switchViewsIfNeeded();
-
             recyclerView.post(this);
         }
     }
