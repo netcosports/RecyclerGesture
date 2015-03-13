@@ -43,18 +43,13 @@ class DragBehaviorVertical implements DragBehavior {
     }
 
     @Override
-    public boolean shouldStartScrollingToStart(View recyclerView, View draggedView) {
-        int previousBoundary = 0;
-        int hoverViewPosition = (int) draggedView.getY();
-        return hoverViewPosition <= previousBoundary;
+    public boolean shouldStartScrollingToStart(View recyclerView, float pointerX, float pointerY, View draggedView) {
+        return pointerY <= draggedView.getHeight();
     }
 
     @Override
-    public boolean shouldStartScrollingToEnd(View recyclerView, View draggedView) {
-        int nextBoundary = recyclerView.getHeight();
-        int hoverViewSize = draggedView.getHeight();
-        int hoverViewPosition = (int) draggedView.getY();
-        return hoverViewPosition + hoverViewSize >= nextBoundary;
+    public boolean shouldStartScrollingToEnd(View recyclerView, float pointerX, float pointerY, View draggedView) {
+        return pointerY >= recyclerView.getHeight() - draggedView.getHeight();
     }
 
     @Override

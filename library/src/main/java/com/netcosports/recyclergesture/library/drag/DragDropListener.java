@@ -319,11 +319,15 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
             }
         }
 
+        boolean isScrolling = scrollIfNeeded(currentX, currentY);
+
+        if (isScrolling) {
+            // motion will be handle by the scrolling process.
+            return true;
+        }
+
         dragBehavior.move(mobileViewX, mobileViewY, mobileView);
-
         switchViewsIfNeeded();
-
-        scrollIfNeeded();
 
         return true;
     }
@@ -418,24 +422,30 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
         return viewHolder == null ? null : viewHolder.itemView;
     }
 
-    private boolean scrollIfNeeded() {
+    /**
+     * Scroll the recycler view while dragging if needed.
+     * <p/>
+     * See also :
+     * {@link DragBehavior#shouldStartScrollingToStart(android.view.View, float, float, android.view.View)}
+     * {@link DragBehavior#shouldStartScrollingToEnd(android.view.View, float, float, android.view.View)}
+     *
+     * @return true if the recycler view is being scrolled
+     */
+    private boolean scrollIfNeeded(float pointerX, float pointerY) {
 
-        boolean shouldScrollToStart = dragBehavior.shouldStartScrollingToStart(recyclerView, mobileView);
-        boolean shouldScrollToEnd = dragBehavior.shouldStartScrollingToEnd(recyclerView, mobileView);
+        boolean shouldScrollToStart = dragBehavior.shouldStartScrollingToStart(
+                recyclerView, pointerX, pointerY, mobileView);
+        boolean shouldScrollToEnd = dragBehavior.shouldStartScrollingToEnd(
+                recyclerView, pointerX, pointerY, mobileView);
 
         if (shouldScrollToStart && !isScrolling) {
-            isScrolling = true;
             autoScroller.startScrolling(AutoScroller.START);
-            return true;
         } else if (shouldScrollToEnd && !isScrolling) {
-            isScrolling = true;
             autoScroller.startScrolling(AutoScroller.END);
-            return true;
         } else if (!shouldScrollToEnd && !shouldScrollToStart && isScrolling) {
             autoScroller.stopScrolling();
-            isScrolling = false;
         }
-        return false;
+        return isScrolling;
     }
 
     /**
@@ -510,12 +520,13 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
             if (direction != START && direction != END) {
                 throw new IllegalArgumentException("Direction unknown");
             }
+            isScrolling = true;
             this.direction = direction;
             recyclerView.post(this);
-
         }
 
         public void stopScrolling() {
+            isScrolling = false;
             recyclerView.removeCallbacks(this);
         }
 
@@ -523,12 +534,39 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
         public void run() {
             dragBehavior.scroll(recyclerView, direction * scrollAmount);
 
-            if (previousDividerPosition != -1 && previousDividerViewHolder == null) {
+            float nextX = mobileView.getX() + direction * scrollAmount;
+            float nextY = mobileView.getY() + direction * scrollAmount;
+
+            if (previousDividerPosition != -1) {
                 previousDividerViewHolder = recyclerView.findViewHolderForPosition(previousDividerPosition);
             }
-            if (nextDividerPosition != -1 && nextDividerViewHolder == null) {
+
+            if (nextDividerPosition != -1) {
                 nextDividerViewHolder = recyclerView.findViewHolderForPosition(nextDividerPosition);
             }
+
+            if (previousDividerViewHolder != null) {
+                View previousDivider = previousDividerViewHolder.itemView;
+                if (previousDivider != null
+                        && dragBehavior.willHoverPreviousDivider(previousDivider, nextX, nextY)) {
+                    // stop scrolling when blocked by a divider
+                    isScrolling = false;
+                    return;
+                }
+            }
+
+            if (nextDividerViewHolder != null) {
+                View nextDivider = nextDividerViewHolder.itemView;
+                if (nextDivider != null
+                        && dragBehavior.willHoverNextDivider(nextDivider, nextX, nextY)) {
+                    // stop scrolling when blocked by a divider
+                    isScrolling = false;
+                    return;
+                }
+            }
+
+//            dragBehavior.move(nextX, nextY, mobileView);
+            switchViewsIfNeeded();
 
             recyclerView.post(this);
         }

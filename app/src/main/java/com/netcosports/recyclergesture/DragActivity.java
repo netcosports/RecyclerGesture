@@ -106,9 +106,8 @@ public class DragActivity extends ActionBarActivity {
         }
 
         if (hasDivider) {
-            models.get(0).isDivider = true;
-            models.get(8).isDivider = true;
-            models.get(15).isDivider = true;
+            models.get(2).isDivider = true;
+            models.get(28).isDivider = true;
         }
         return models;
     }
