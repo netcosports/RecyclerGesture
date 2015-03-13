@@ -85,4 +85,24 @@ interface DragBehavior {
      */
     public void scroll(View recyclerView, int velocity);
 
+    /**
+     * Define if the dragged view will hover the previous divider with the new coordinates.
+     *
+     * @param previous previous view.
+     * @param newX     future dragged view x.
+     * @param newY     future dragged view y.
+     * @return true if the dragged view should be blocked due to hover.
+     */
+    public boolean willHoverPreviousDivider(View previous, float newX, float newY);
+
+    /**
+     * Define if the dragged view will hover the next divider with the new coordinates.
+     *
+     * @param next next view.
+     * @param newX future dragged view x.
+     * @param newY future dragged view y.
+     * @return true if the dragged view should be blocked due to hover.
+     */
+    public boolean willHoverNextDivider(View next, float newX, float newY);
+
 }

@@ -15,4 +15,16 @@ public class DragStrategy {
         return true;
     }
 
+    /**
+     * Allow to enable/disable drag above a specific item.
+     * <p/>
+     * If disable, draggedView won't be able to hover it while dragging.
+     *
+     * @param position position of the item in the adapter.
+     * @return true if the item can be hover by dragged view.
+     */
+    public boolean isItemHoverable(int position) {
+        return true;
+    }
+
 }

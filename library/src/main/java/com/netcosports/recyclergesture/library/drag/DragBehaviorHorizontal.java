@@ -60,4 +60,14 @@ class DragBehaviorHorizontal implements DragBehavior {
     public void scroll(View recyclerView, int velocity) {
         recyclerView.scrollBy(velocity, 0);
     }
+
+    @Override
+    public boolean willHoverPreviousDivider(View previous, float newX, float newY) {
+        return newX < previous.getX();
+    }
+
+    @Override
+    public boolean willHoverNextDivider(View next, float newX, float newY) {
+        return newX > next.getX();
+    }
 }

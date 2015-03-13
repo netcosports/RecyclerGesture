@@ -179,5 +179,11 @@ public class DragActivity extends ActionBarActivity {
             DummyModel model = models.get(position);
             return !model.isDivider;
         }
+
+        @Override
+        public boolean isItemHoverable(int position) {
+            DummyModel model = models.get(position);
+            return !model.isDivider;
+        }
     }
 }
