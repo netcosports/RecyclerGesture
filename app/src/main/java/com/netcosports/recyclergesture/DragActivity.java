@@ -76,7 +76,7 @@ public class DragActivity extends ActionBarActivity {
         this.models = initData(hasDivider);
 
         RecyclerView recyclerView = ((RecyclerView) findViewById(R.id.activity_drag_recycler_view));
-        recyclerView.setLayoutManager(new LinearLayoutManager(this, orientation, false));
+        recyclerView.setLayoutManager(new PageManager(this, recyclerView, false));
         recyclerView.setHasFixedSize(true);
 
         DummyAdapter adapter = new DummyAdapter(this.models);

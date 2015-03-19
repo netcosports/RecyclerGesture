@@ -1,6 +1,7 @@
 package com.netcosports.recyclergesture;
 
 import android.os.Bundle;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.view.View;
 
@@ -19,6 +20,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         findViewById(R.id.main_activity_drag_horizontal_divider).setOnClickListener(this);
         findViewById(R.id.main_activity_drag_vertical).setOnClickListener(this);
         findViewById(R.id.main_activity_drag_vertical_divider).setOnClickListener(this);
+        ViewPager v = new ViewPager(this);
     }
 
 

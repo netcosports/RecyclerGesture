@@ -3,7 +3,6 @@
     android:id="@+id/demo_item_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_margin="2dp"
     android:background="@android:color/darker_gray"
     android:clickable="true">
 
