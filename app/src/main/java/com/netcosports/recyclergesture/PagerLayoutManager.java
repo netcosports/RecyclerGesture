@@ -10,13 +10,15 @@ import android.view.View;
 import android.view.ViewConfiguration;
 
 /**
- * Created by thomas on 16/03/15.
+ * Layout manager which allow to turn a recycler view into a pager.
+ * <p/>
+ * Mimic motion of a view pager.
  */
-public class PageManager extends LinearLayoutManager implements RecyclerView.OnItemTouchListener {
+public class PagerLayoutManager extends LinearLayoutManager implements RecyclerView.OnItemTouchListener {
 
     /**
      * Since {@link android.view.ViewConfiguration#getScaledMaximumFlingVelocity()} is in pixel per
-     * second same unit should be applied when compute velociy tracker.
+     * second same unit should be applied when compute velocity tracker.
      */
     private static final int PIXEL_PER_SECOND_VELOCITY = 1000;
 
@@ -25,6 +27,24 @@ public class PageManager extends LinearLayoutManager implements RecyclerView.OnI
      */
     private static final int MIN_FLING_VELOCITY = 400;
 
+    /**
+     * Dummy listener.
+     */
+    private static OnPageChangeListener sDummyListener = new OnPageChangeListener() {
+        @Override
+        public void onPageSelected(int position) {
+
+        }
+    };
+
+    /**
+     * Current listener callbacks.
+     */
+    private OnPageChangeListener mOnPageChangeListener = sDummyListener;
+
+    /**
+     * RecyclerView which holds the Layout manager.
+     */
     private RecyclerView mRecyclerView;
 
     /**
@@ -57,7 +77,12 @@ public class PageManager extends LinearLayoutManager implements RecyclerView.OnI
      */
     private int mCurrentPage;
 
-    public PageManager(Context context, RecyclerView recyclerView, boolean reverseLayout) {
+    /**
+     * True if pager motion should be enable.
+     */
+    private boolean mPagerMotionEnable;
+
+    public PagerLayoutManager(Context context, RecyclerView recyclerView, boolean reverseLayout) {
         super(context, LinearLayoutManager.HORIZONTAL, reverseLayout);
 
         mRecyclerView = recyclerView;
@@ -71,6 +96,12 @@ public class PageManager extends LinearLayoutManager implements RecyclerView.OnI
         mMinimumVelocityForSwipe = (int) (MIN_FLING_VELOCITY * density);
 
         mCurrentPage = 0;
+        mPagerMotionEnable = true;
+    }
+
+    @Override
+    public int findFirstVisibleItemPosition() {
+        return super.findFirstVisibleItemPosition();
     }
 
     @Override
@@ -91,16 +122,18 @@ public class PageManager extends LinearLayoutManager implements RecyclerView.OnI
             case MotionEvent.ACTION_DOWN:
                 mActivePointerId = ev.getPointerId(0);
                 break;
-            case MotionEvent.ACTION_MOVE:
-                break;
             case MotionEvent.ACTION_UP:
                 final VelocityTracker velocityTracker = mVelocityTracker;
                 velocityTracker.computeCurrentVelocity(PIXEL_PER_SECOND_VELOCITY, mMaximumVelocity);
                 int motionVelocity = (int) VelocityTrackerCompat.getXVelocity(
                         velocityTracker, mActivePointerId);
                 int page = getTargetPage(mRecyclerViewScrollX, motionVelocity);
-                this.smoothScrollToPosition(mRecyclerView, null, page);
                 mCurrentPage = page;
+                mOnPageChangeListener.onPageSelected(mCurrentPage);
+
+                if (mPagerMotionEnable) {
+                    this.smoothScrollToPosition(mRecyclerView, null, page);
+                }
             case MotionEvent.ACTION_CANCEL:
                 if (mVelocityTracker != null) {
                     mVelocityTracker.recycle();
@@ -118,6 +151,28 @@ public class PageManager extends LinearLayoutManager implements RecyclerView.OnI
 
     @Override
     public void onTouchEvent(RecyclerView rv, MotionEvent ev) {
+    }
+
+    /**
+     * Enable / disable pager.
+     *
+     * @param enable true to enable the pager motion.
+     */
+    public void enablePager(boolean enable) {
+        mPagerMotionEnable = enable;
+    }
+
+    /**
+     * Set a listener used to catch page change events.
+     *
+     * @param listener listener which will be called during page motion.
+     */
+    public void setOnPageChangeListener(OnPageChangeListener listener) {
+        if (listener == null) {
+            mOnPageChangeListener = sDummyListener;
+        } else {
+            mOnPageChangeListener = listener;
+        }
     }
 
     private int getTargetPage(int scrollX, int velocity) {
@@ -149,8 +204,23 @@ public class PageManager extends LinearLayoutManager implements RecyclerView.OnI
             super.onScrollStateChanged(recyclerView, newState);
             if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                 int page = getTargetPage(mRecyclerViewScrollX, 0);
-                PageManager.this.smoothScrollToPosition(recyclerView, null, page);
+                if (mPagerMotionEnable) {
+                    PagerLayoutManager.this.smoothScrollToPosition(recyclerView, null, page);
+                }
             }
         }
+    }
+
+    /**
+     * Listener used to catch page event.
+     */
+    public interface OnPageChangeListener {
+        /**
+         * This method will be invoked when a new page becomes selected. Animation is not
+         * necessarily complete.
+         *
+         * @param position Position index of the new selected page.
+         */
+        public void onPageSelected(int position);
     }
 }

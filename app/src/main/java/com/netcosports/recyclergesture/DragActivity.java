@@ -21,7 +21,7 @@ import java.util.ArrayList;
 /**
  * Activity used as sample for {@link com.netcosports.recyclergesture.library.drag.DragDropGesture}
  */
-public class DragActivity extends ActionBarActivity {
+public class DragActivity extends ActionBarActivity implements PagerLayoutManager.OnPageChangeListener {
 
     /**
      * Used to know if the recycler should be horizontal.
@@ -37,6 +37,8 @@ public class DragActivity extends ActionBarActivity {
      * Models
      */
     private ArrayList<DummyModel> models;
+
+    private PagerLayoutManager mPagerLayoutManager;
 
     /**
      * Start activity pattern.
@@ -76,7 +78,9 @@ public class DragActivity extends ActionBarActivity {
         this.models = initData(hasDivider);
 
         RecyclerView recyclerView = ((RecyclerView) findViewById(R.id.activity_drag_recycler_view));
-        recyclerView.setLayoutManager(new PageManager(this, recyclerView, false));
+        mPagerLayoutManager = new PagerLayoutManager(this, recyclerView, false);
+        mPagerLayoutManager.setOnPageChangeListener(this);
+        recyclerView.setLayoutManager(mPagerLayoutManager);
         recyclerView.setHasFixedSize(true);
 
         DummyAdapter adapter = new DummyAdapter(this.models);
@@ -110,6 +114,15 @@ public class DragActivity extends ActionBarActivity {
             models.get(28).isDivider = true;
         }
         return models;
+    }
+
+    @Override
+    public void onPageSelected(int position) {
+        if (position < 5) {
+            mPagerLayoutManager.enablePager(true);
+        } else {
+            mPagerLayoutManager.enablePager(false);
+        }
     }
 
     /**
