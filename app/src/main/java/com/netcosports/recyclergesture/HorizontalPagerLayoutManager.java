@@ -10,11 +10,11 @@ import android.view.View;
 import android.view.ViewConfiguration;
 
 /**
- * Layout manager which allow to turn a recycler view into a pager.
+ * Layout manager which allow to turn a recycler view into an horizontal pager.
  * <p/>
  * Mimic motion of a view pager.
  */
-public class PagerLayoutManager extends LinearLayoutManager implements RecyclerView.OnItemTouchListener {
+public class HorizontalPagerLayoutManager extends LinearLayoutManager implements RecyclerView.OnItemTouchListener {
 
     /**
      * Since {@link android.view.ViewConfiguration#getScaledMaximumFlingVelocity()} is in pixel per
@@ -48,11 +48,6 @@ public class PagerLayoutManager extends LinearLayoutManager implements RecyclerV
     private RecyclerView mRecyclerView;
 
     /**
-     * Used to keep recycler view scroll x offset.
-     */
-    private int mRecyclerViewScrollX = 0;
-
-    /**
      * Determines speed during touch scrolling
      */
     private VelocityTracker mVelocityTracker;
@@ -82,12 +77,16 @@ public class PagerLayoutManager extends LinearLayoutManager implements RecyclerV
      */
     private boolean mPagerMotionEnable;
 
-    public PagerLayoutManager(Context context, RecyclerView recyclerView, boolean reverseLayout) {
+    /**
+     * X coordinate at down event.
+     */
+    private float mXAtDown;
+
+    public HorizontalPagerLayoutManager(Context context, RecyclerView recyclerView, boolean reverseLayout) {
         super(context, LinearLayoutManager.HORIZONTAL, reverseLayout);
 
         mRecyclerView = recyclerView;
         mRecyclerView.addOnItemTouchListener(this);
-        mRecyclerView.setOnScrollListener(new PageScrollListener());
         mRecyclerView.setScrollingTouchSlop(RecyclerView.TOUCH_SLOP_PAGING);
 
         ViewConfiguration configuration = ViewConfiguration.get(context);
@@ -97,11 +96,6 @@ public class PagerLayoutManager extends LinearLayoutManager implements RecyclerV
 
         mCurrentPage = 0;
         mPagerMotionEnable = true;
-    }
-
-    @Override
-    public int findFirstVisibleItemPosition() {
-        return super.findFirstVisibleItemPosition();
     }
 
     @Override
@@ -121,18 +115,23 @@ public class PagerLayoutManager extends LinearLayoutManager implements RecyclerV
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 mActivePointerId = ev.getPointerId(0);
+                mXAtDown = ev.getX();
                 break;
             case MotionEvent.ACTION_UP:
                 final VelocityTracker velocityTracker = mVelocityTracker;
                 velocityTracker.computeCurrentVelocity(PIXEL_PER_SECOND_VELOCITY, mMaximumVelocity);
                 int motionVelocity = (int) VelocityTrackerCompat.getXVelocity(
                         velocityTracker, mActivePointerId);
-                int page = getTargetPage(mRecyclerViewScrollX, motionVelocity);
+
+                float scrollX = mXAtDown - ev.getX();
+                final int page = getTargetPage(scrollX, motionVelocity);
                 mCurrentPage = page;
                 mOnPageChangeListener.onPageSelected(mCurrentPage);
 
                 if (mPagerMotionEnable) {
-                    this.smoothScrollToPosition(mRecyclerView, null, page);
+                    // since ViewFlinger posted on animation isn't runned when scrolling motion
+                    // is smooth and not flinged, delay the smoothScrollRequest.
+                    mRecyclerView.postDelayed(new SmoothScroller(page), 1);
                 }
             case MotionEvent.ACTION_CANCEL:
                 if (mVelocityTracker != null) {
@@ -175,40 +174,29 @@ public class PagerLayoutManager extends LinearLayoutManager implements RecyclerV
         }
     }
 
-    private int getTargetPage(int scrollX, int velocity) {
-        if (velocity > mMinimumVelocityForSwipe) {
+    private int getTargetPage(float scrollX, int velocity) {
+        int direction = 1;
+        int targetPage = mCurrentPage;
 
-        }
-        int pageWidth = mRecyclerView.getWidth();
-        int targetPage = Math.round((float) scrollX / (float) pageWidth);
-
-        if (targetPage == mCurrentPage && Math.abs(velocity) > mMinimumVelocityForSwipe) {
-            if (scrollX > mCurrentPage * pageWidth) {
-                targetPage++;
-            } else if (mCurrentPage > 0) {
-                targetPage--;
+        if (scrollX < 0) {
+            if (mCurrentPage == 0) {
+                return mCurrentPage;
+            } else {
+                direction = -1;
             }
+        } else if (scrollX > 0) {
+            if (mCurrentPage == getItemCount() - 1) {
+                return mCurrentPage;
+            } else {
+                direction = 1;
+            }
+        }
+
+        if (Math.abs(velocity) > mMinimumVelocityForSwipe
+                || Math.abs(scrollX) > mRecyclerView.getWidth() / 2) {
+            targetPage += direction;
         }
         return targetPage;
-    }
-
-    private class PageScrollListener extends RecyclerView.OnScrollListener {
-        @Override
-        public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-            super.onScrolled(recyclerView, dx, dy);
-            mRecyclerViewScrollX += dx;
-        }
-
-        @Override
-        public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-            super.onScrollStateChanged(recyclerView, newState);
-            if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                int page = getTargetPage(mRecyclerViewScrollX, 0);
-                if (mPagerMotionEnable) {
-                    PagerLayoutManager.this.smoothScrollToPosition(recyclerView, null, page);
-                }
-            }
-        }
     }
 
     /**
@@ -222,5 +210,22 @@ public class PagerLayoutManager extends LinearLayoutManager implements RecyclerV
          * @param position Position index of the new selected page.
          */
         public void onPageSelected(int position);
+    }
+
+    /**
+     * Scroller used to perform smooth scroll to a given position.
+     */
+    private class SmoothScroller implements Runnable {
+
+        private int mPosition;
+
+        public SmoothScroller(int position) {
+            mPosition = position;
+        }
+
+        @Override
+        public void run() {
+            HorizontalPagerLayoutManager.this.smoothScrollToPosition(mRecyclerView, null, mPosition);
+        }
     }
 }
