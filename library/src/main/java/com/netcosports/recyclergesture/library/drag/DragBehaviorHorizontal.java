@@ -43,12 +43,12 @@ class DragBehaviorHorizontal implements DragBehavior {
 
     @Override
     public boolean shouldStartScrollingToStart(View recyclerView, View draggedView) {
-        return draggedView.getX() <= 0;
+        return draggedView.getX() <= -draggedView.getWidth() / 4;
     }
 
     @Override
     public boolean shouldStartScrollingToEnd(View recyclerView, View draggedView) {
-        return draggedView.getX() + draggedView.getWidth() >= recyclerView.getWidth();
+        return draggedView.getX() + draggedView.getWidth() * 3 / 4 >= recyclerView.getWidth();
     }
 
     @Override

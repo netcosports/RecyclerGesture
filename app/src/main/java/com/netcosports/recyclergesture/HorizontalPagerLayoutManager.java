@@ -112,6 +112,9 @@ public class HorizontalPagerLayoutManager extends LinearLayoutManager implements
 
     @Override
     public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent ev) {
+        if (!mPagerMotionEnable) {
+            return false;
+        }
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 mActivePointerId = ev.getPointerId(0);

@@ -341,12 +341,12 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
         View previousView = getViewByPosition(previousPos);
         View nextView = getViewByPosition(nextPos);
 
-        if (dragBehavior.shouldSwitchWithPrevious(mobileView, previousView)) {
-            doSwitch(previousView, pos, previousPos);
+        if (previousView != null && dragBehavior.shouldSwitchWithPrevious(mobileView, previousView)) {
             Log.d("LARGONNE", "switch previous");
-        } else if (dragBehavior.shouldSwitchWithNext(mobileView, nextView)) {
-            doSwitch(nextView, pos, nextPos);
+            doSwitch(previousView, pos, previousPos);
+        } else if (nextView != null && dragBehavior.shouldSwitchWithNext(mobileView, nextView)) {
             Log.d("LARGONNE", "switch next");
+            doSwitch(nextView, pos, nextPos);
         }
     }
 
@@ -356,10 +356,13 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
         onItemSwitch(recyclerView, originalViewPos, switchViewPos);
 
         switchView.setVisibility(View.INVISIBLE);
-        originalView.setVisibility(View.VISIBLE);
 
-        dragBehavior.getSwitchAnimator(originalView, switchView)
-                .setDuration(MOVE_DURATION);
+        if (originalView != null) {
+            originalView.setVisibility(View.VISIBLE);
+            dragBehavior.getSwitchAnimator(originalView, switchView)
+                    .setDuration(MOVE_DURATION);
+        }
+
 
         mobileViewCurrentPos = switchViewPos;
     }
@@ -404,7 +407,6 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
         mobileViewStartY = -1;
         mobileViewStartX = -1;
         mobileViewCurrentPos = -1;
-
     }
 
     /**
@@ -439,9 +441,9 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
         boolean shouldScrollToStart = dragBehavior.shouldStartScrollingToStart(recyclerView, mobileView);
         boolean shouldScrollToEnd = dragBehavior.shouldStartScrollingToEnd(recyclerView, mobileView);
 
-        if (shouldScrollToStart && !isScrolling) {
+        if (shouldScrollToStart && !autoScroller.isScrollingStart()) {
             autoScroller.startScrolling(AutoScroller.START);
-        } else if (shouldScrollToEnd && !isScrolling) {
+        } else if (shouldScrollToEnd && !autoScroller.isScrollingEnd()) {
             autoScroller.startScrolling(AutoScroller.END);
         } else if (!shouldScrollToEnd && !shouldScrollToStart && isScrolling) {
             autoScroller.stopScrolling();
@@ -511,10 +513,15 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
          */
         static final int END = 1;
 
+        /**
+         * Direction when not scrolling.
+         */
+        static final int NONE = 0;
+
         private int direction;
 
         public AutoScroller() {
-
+            direction = NONE;
         }
 
         public void startScrolling(int direction) {
@@ -528,6 +535,7 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
 
         public void stopScrolling() {
             isScrolling = false;
+            direction = NONE;
             recyclerView.removeCallbacks(this);
         }
 
@@ -568,6 +576,24 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
 
             switchViewsIfNeeded();
             recyclerView.post(this);
+        }
+
+        /**
+         * Used to know if scrolling to start.
+         *
+         * @return true when scroller is scrolling to start.
+         */
+        public boolean isScrollingStart() {
+            return direction == START;
+        }
+
+        /**
+         * Used to know if scrolling to end.
+         *
+         * @return true when scroller is scrolling to end.
+         */
+        public boolean isScrollingEnd() {
+            return direction == END;
         }
     }
 }
