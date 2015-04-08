@@ -106,8 +106,14 @@ public class HorizontalPagerLayoutManager extends LinearLayoutManager implements
 
     @Override
     public void measureChildWithMargins(View child, int widthUsed, int heightUsed) {
-        child.measure(View.MeasureSpec.makeMeasureSpec(mRecyclerView.getWidth(), View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(mRecyclerView.getHeight(), View.MeasureSpec.EXACTLY));
+        super.measureChildWithMargins(child, widthUsed, heightUsed);
+        
+        child.measure(View.MeasureSpec.makeMeasureSpec(
+                        mRecyclerView.getWidth() - getDecoratedMeasuredWidth(child)
+                                + child.getMeasuredWidth(), View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(
+                        mRecyclerView.getHeight() - getDecoratedMeasuredHeight(child)
+                                + child.getMeasuredHeight(), View.MeasureSpec.EXACTLY));
     }
 
     @Override
