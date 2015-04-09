@@ -22,7 +22,6 @@ import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -348,10 +347,8 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
 
         if (dragBehavior.shouldSwitchWithPrevious(mobileView, previousView)) {
             doSwitch(previousView, pos, previousPos);
-            Log.d("LARGONNE", "switch previous");
         } else if (dragBehavior.shouldSwitchWithNext(mobileView, nextView)) {
             doSwitch(nextView, pos, nextPos);
-            Log.d("LARGONNE", "switch next");
         }
     }
 
