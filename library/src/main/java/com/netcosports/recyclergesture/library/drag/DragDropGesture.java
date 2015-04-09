@@ -92,9 +92,9 @@ public final class DragDropGesture extends RecyclerGesture {
         /**
          * Attach the gesture to the recycler view.
          * <p/>
-         * Note : if no custom {@link DragDropGesture.Swapper}
-         * will be set through {@link DragDropGesture.Builder#swap(DragDropGesture.Swapper)} the
-         * recycler adapter must implement {@link DragDropGesture.Swapper} interface itself.
+         * Note : the recycler adapter must implements
+         * {@link com.netcosports.recyclergesture.library.drag.DragDropGesture.Swapper} interface to
+         * proceed to the swapping.
          *
          * @param target recycler view on which the drag and drop gesture will be attached.
          * @return builder to chain param.
@@ -102,17 +102,10 @@ public final class DragDropGesture extends RecyclerGesture {
         public Builder on(RecyclerView target) {
             this.attachedRecyclerView = target;
             this.recyclerArrayAdapter = this.attachedRecyclerView.getAdapter();
-            return this;
-        }
-
-        /**
-         * Define the swapper which will be called once drop event happened.
-         *
-         * @param swapper swapper which should proceed to the swap.
-         * @return builder to chain param.
-         */
-        public Builder swap(Swapper swapper) {
-            this.swapper = swapper;
+            if (!(this.recyclerArrayAdapter instanceof Swapper)) {
+                throw new IllegalArgumentException("RecyclerView adapter must implement Swapper"
+                        + " interface to proceed to the data swapping");
+            }
             return this;
         }
 
@@ -159,15 +152,6 @@ public final class DragDropGesture extends RecyclerGesture {
 
             if (this.attachedRecyclerView == null) {
                 throw new IllegalStateException("Recycler view can't be null, see Builder.on(recyclerView)");
-            }
-
-            if (this.swapper == null) {
-                if (this.recyclerArrayAdapter instanceof Swapper) {
-                    this.swapper = ((Swapper) this.recyclerArrayAdapter);
-                } else {
-                    throw new IllegalStateException("Swapper interface should be set to process to the items"
-                            + "swapping once drop event happened.");
-                }
             }
 
             if (this.dragBehavior == null) {
