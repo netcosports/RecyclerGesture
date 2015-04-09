@@ -234,8 +234,8 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
 
         // initialize the view used as thumbnail while dragging.
         mobileView = getDraggingView(viewUnder);
-        mobileView.setX(viewUnder.getX());
-        mobileView.setY(viewUnder.getY());
+        mobileView.setX(viewUnder.getLeft() + recyclerView.getLeft());
+        mobileView.setY(viewUnder.getTop() + recyclerView.getTop());
         mobileViewStartY = mobileView.getY();
         mobileViewStartX = mobileView.getX();
 
