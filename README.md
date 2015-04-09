@@ -1,7 +1,7 @@
 # RecyclerGesture
 Lightweight library used to easily attached simple gesture to a recycler view based on RecycleView.addOnItemTouchListener()
 
-* [Drag&Drop](#drag&drop)
+* [Drag&Drop](#dragdrop)
 
 #Drag&Drop
 
