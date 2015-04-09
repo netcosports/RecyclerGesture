@@ -83,7 +83,6 @@ public class DragActivity extends ActionBarActivity {
 
         DragDropGesture.Builder builder = new DragDropGesture.Builder()
                 .on(recyclerView)
-                .with(adapter)
                 .apply(new DummyDragStrategy());
 
         if (isHorizontal) {

@@ -91,23 +91,17 @@ public final class DragDropGesture extends RecyclerGesture {
 
         /**
          * Attach the gesture to the recycler view.
+         * <p/>
+         * Note : if no custom {@link DragDropGesture.Swapper}
+         * will be set through {@link DragDropGesture.Builder#swap(DragDropGesture.Swapper)} the
+         * recycler adapter must implement {@link DragDropGesture.Swapper} interface itself.
          *
          * @param target recycler view on which the drag and drop gesture will be attached.
          * @return builder to chain param.
          */
         public Builder on(RecyclerView target) {
             this.attachedRecyclerView = target;
-            return this;
-        }
-
-        /**
-         * Currently drag an drop works only on ArrayList based adapter.
-         *
-         * @param adapter adapter attached to the recycler view.
-         * @return builder to chain param.
-         */
-        public Builder with(RecyclerView.Adapter adapter) {
-            this.recyclerArrayAdapter = adapter;
+            this.recyclerArrayAdapter = this.attachedRecyclerView.getAdapter();
             return this;
         }
 
