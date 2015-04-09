@@ -1,7 +1,7 @@
 # RecyclerGesture
 Lightweight library used to easily attached simple gesture to a recycler view based on RecycleView.addOnItemTouchListener()
 
-* [Drag&Drop](#drag&drop)
+* [Drag&Drop](#dragdrop)
 
 #Drag&Drop
 
@@ -9,7 +9,7 @@ Drag&Drop gesture allow you to easily sort items displayed in your RecyclerView.
 
 No need to change or extend RecyclerView.
 
-No need to change or extend RecylerView.Adapter.
+No need to change or extend RecyclerView.Adapter.
 
 No need to replace/remove OnScrollListener if one is used.
 
