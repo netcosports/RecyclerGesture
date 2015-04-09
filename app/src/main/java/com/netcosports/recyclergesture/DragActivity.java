@@ -12,7 +12,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.netcosports.recyclergesture.library.RecyclerArrayAdapter;
 import com.netcosports.recyclergesture.library.drag.DragDropGesture;
 import com.netcosports.recyclergesture.library.drag.DragStrategy;
 
@@ -88,7 +87,6 @@ public class DragActivity extends ActionBarActivity implements HorizontalPagerLa
 
         DragDropGesture.Builder builder = new DragDropGesture.Builder()
                 .on(recyclerView)
-                .with(adapter)
                 .apply(new DummyDragStrategy());
 
         if (isHorizontal) {
@@ -157,7 +155,7 @@ public class DragActivity extends ActionBarActivity implements HorizontalPagerLa
     /**
      * Dummy adapter.
      */
-    private static class DummyAdapter extends RecyclerArrayAdapter<DummyModel, DummyViewHolder> {
+    private static class DummyAdapter extends SwappableAdapter<DummyModel, DummyViewHolder> {
 
         public DummyAdapter(ArrayList<DummyModel> items) {
             super(items);

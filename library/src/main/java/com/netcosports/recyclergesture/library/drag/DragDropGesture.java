@@ -2,7 +2,6 @@ package com.netcosports.recyclergesture.library.drag;
 
 import android.support.v7.widget.RecyclerView;
 
-import com.netcosports.recyclergesture.library.RecyclerArrayAdapter;
 import com.netcosports.recyclergesture.library.RecyclerGesture;
 
 /**
@@ -32,13 +31,14 @@ public final class DragDropGesture extends RecyclerGesture {
      *
      * @param recyclerView recyclerView on which gesture is detected.
      * @param adapter      data of the recyclerView.
+     * @param swapper      process to the swap.
      * @param dragBehavior behavior to adopt while dragging.
      * @param strategy     drag strategy.
      */
-    private DragDropGesture(RecyclerView recyclerView, RecyclerArrayAdapter adapter,
+    private DragDropGesture(RecyclerView recyclerView, RecyclerView.Adapter adapter, Swapper swapper,
                             DragBehavior dragBehavior, DragStrategy strategy) {
         super();
-        dragDropListener = new DragDropListener(recyclerView, adapter, dragBehavior, strategy);
+        dragDropListener = new DragDropListener(recyclerView, adapter, swapper, dragBehavior, strategy);
         recyclerView.addOnItemTouchListener(dragDropListener);
     }
 
@@ -61,7 +61,7 @@ public final class DragDropGesture extends RecyclerGesture {
         /**
          * Currently only works with ArrayList based adapter.
          */
-        private RecyclerArrayAdapter recyclerArrayAdapter;
+        private RecyclerView.Adapter recyclerArrayAdapter;
 
         /**
          * Gesture orientation.
@@ -74,6 +74,11 @@ public final class DragDropGesture extends RecyclerGesture {
         private DragStrategy dragStrategy;
 
         /**
+         * Object used to swap object.
+         */
+        private Swapper swapper;
+
+        /**
          * Builder pattern.
          */
         public Builder() {
@@ -81,27 +86,26 @@ public final class DragDropGesture extends RecyclerGesture {
             this.recyclerArrayAdapter = null;
             this.dragBehavior = null;
             this.dragStrategy = null;
+            this.swapper = null;
         }
 
         /**
          * Attach the gesture to the recycler view.
+         * <p/>
+         * Note : the recycler adapter must implements
+         * {@link com.netcosports.recyclergesture.library.drag.DragDropGesture.Swapper} interface to
+         * proceed to the swapping.
          *
          * @param target recycler view on which the drag and drop gesture will be attached.
          * @return builder to chain param.
          */
         public Builder on(RecyclerView target) {
             this.attachedRecyclerView = target;
-            return this;
-        }
-
-        /**
-         * Currently drag an drop works only on ArrayList based adapter.
-         *
-         * @param adapter adapter attached to the recycler view.
-         * @return builder to chain param.
-         */
-        public Builder with(RecyclerArrayAdapter adapter) {
-            this.recyclerArrayAdapter = adapter;
+            this.recyclerArrayAdapter = this.attachedRecyclerView.getAdapter();
+            if (!(this.recyclerArrayAdapter instanceof Swapper)) {
+                throw new IllegalArgumentException("RecyclerView adapter must implement Swapper"
+                        + " interface to proceed to the data swapping");
+            }
             return this;
         }
 
@@ -159,7 +163,23 @@ public final class DragDropGesture extends RecyclerGesture {
             }
 
             return new DragDropGesture(this.attachedRecyclerView, this.recyclerArrayAdapter,
-                    this.dragBehavior, this.dragStrategy);
+                    this.swapper, this.dragBehavior, this.dragStrategy);
         }
+    }
+
+    /**
+     * Interface used to swap dragged item at the dropped position.
+     */
+    public interface Swapper {
+        /**
+         * Called when swap two items should be performed.
+         * <p/>
+         * private package.
+         *
+         * @param from src position.
+         * @param to   dest position.
+         */
+        public void swapPositions(int from, int to);
+
     }
 }

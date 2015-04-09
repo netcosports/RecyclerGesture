@@ -13,15 +13,18 @@
  * /
  */
 
-package com.netcosports.recyclergesture.library;
+package com.netcosports.recyclergesture;
 
 import android.support.v7.widget.RecyclerView;
 
+import com.netcosports.recyclergesture.library.drag.DragDropGesture;
+
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 /**
- * Extension to standard RecyclerView.Adapter that also keep state of selected/activated items.
+ * Simple RecyclerView.Adapter based on an {@link java.util.ArrayList}
  *
  * @param <T> Type of the class in this adapter
  * @param <H> - ViewHolder type
@@ -31,7 +34,7 @@ public abstract class RecyclerArrayAdapter<T, H extends RecyclerView.ViewHolder>
     private ArrayList<T> items;
 
     /**
-     * Extension to standard RecyclerView.Adapter that also keep state of selected/activated items.
+     * Simple RecyclerView.Adapter based on an {@link java.util.ArrayList}
      *
      * @param items models.
      */
@@ -66,23 +69,20 @@ public abstract class RecyclerArrayAdapter<T, H extends RecyclerView.ViewHolder>
     }
 
     /**
-     * Swap two items.
-     * <p/>
-     * private package.
-     *
-     * @param from src position.
-     * @param to   dest position.
-     */
-    public void swapPositions(int from, int to) {
-        Collections.swap(items, from, to);
-    }
-
-    /**
      * Remove item.
      *
      * @param pos position of the item to remove.
      */
     public void removeItem(int pos) {
         items.remove(pos);
+    }
+
+    /**
+     * Retrieve data models.
+     *
+     * @return items models.
+     */
+    public List<T> getItems() {
+        return items;
     }
 }

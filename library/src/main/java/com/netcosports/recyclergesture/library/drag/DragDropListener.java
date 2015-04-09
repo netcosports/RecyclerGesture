@@ -30,8 +30,6 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
-import com.netcosports.recyclergesture.library.RecyclerArrayAdapter;
-
 
 /**
  * Implementation of RecyclerView.OnItemTouchListener that allows reordering items in
@@ -47,7 +45,7 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
     private static final int MOVE_DURATION = 150;
 
     private RecyclerView recyclerView;
-    private RecyclerArrayAdapter adapter;
+    private RecyclerView.Adapter adapter;
 
     private final int scrollAmount;
     private int downY = -1;
@@ -115,21 +113,28 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
      */
     private int nextDividerPosition;
 
+    /**
+     * Swapper used to swap data once an item is dropped.
+     */
+    private DragDropGesture.Swapper swapper;
+
 
     /**
      * Drag and drop listener.
      *
      * @param recyclerView recycler view on which listener will be applied.
      * @param adapter      adapter.
+     * @param swapper      swapper used to swap items model once a drop event happened.
      * @param dragBehavior behavior to adopt while dragging.
      * @param dragStrategy strategy used to enable drag on items.
      */
-    public DragDropListener(RecyclerView recyclerView, RecyclerArrayAdapter adapter,
-                            DragBehavior dragBehavior, DragStrategy dragStrategy) {
+    public DragDropListener(RecyclerView recyclerView, RecyclerView.Adapter adapter
+            , DragDropGesture.Swapper swapper, DragBehavior dragBehavior, DragStrategy dragStrategy) {
         this.dragBehavior = dragBehavior;
         this.recyclerView = recyclerView;
         this.dragStrategy = dragStrategy;
         this.adapter = adapter;
+        this.swapper = swapper;
 
         dragging = false;
 
@@ -353,7 +358,7 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
     private void doSwitch(final View switchView, final int originalViewPos, final int switchViewPos) {
         View originalView = getViewByPosition(originalViewPos);
 
-        onItemSwitch(recyclerView, originalViewPos, switchViewPos);
+        onItemSwitch(originalViewPos, switchViewPos);
 
         switchView.setVisibility(View.INVISIBLE);
 
@@ -410,15 +415,13 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
     }
 
     /**
-     * Implementation usually do 2 things: change positions of items in RecyclerView.Adapter and
-     * notify it about changes
+     * propagate the switch to the adapter.
      *
-     * @param recyclerView view the item is being dragged in
-     * @param from         original (start) drag position within adapter
-     * @param to           new drag position withing adapter
+     * @param from original (start) drag position within adapter
+     * @param to   new drag position withing adapter
      */
-    private void onItemSwitch(RecyclerView recyclerView, int from, int to) {
-        adapter.swapPositions(from, to);
+    private void onItemSwitch(int from, int to) {
+        swapper.swapPositions(from, to);
         adapter.notifyItemChanged(to);
     }
 
