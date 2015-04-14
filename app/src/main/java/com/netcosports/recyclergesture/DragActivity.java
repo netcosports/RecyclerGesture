@@ -2,6 +2,7 @@ package com.netcosports.recyclergesture;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -11,8 +12,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.netcosports.recyclergesture.library.RecyclerArrayAdapter;
 import com.netcosports.recyclergesture.library.drag.DragDropGesture;
+import com.netcosports.recyclergesture.library.drag.DragStrategy;
 
 import java.util.ArrayList;
 
@@ -27,14 +28,26 @@ public class DragActivity extends ActionBarActivity {
     private static final String KEY_HORIZONTAL = "horizontal_orientation";
 
     /**
+     * Used to know if the adapter should have divider.
+     */
+    private static final String KEY_DIVIDER = "with_divider";
+
+    /**
+     * Models
+     */
+    private ArrayList<DummyModel> models;
+
+    /**
      * Start activity pattern.
      *
-     * @param context    context used to start the activity.
-     * @param horizontal true if the recycler view should be display horizontally.
+     * @param context     context used to start the activity.
+     * @param horizontal  true if the recycler view should be display horizontally.
+     * @param withDivider true to add divider in the list.
      */
-    public static void startActivity(Context context, boolean horizontal) {
+    public static void startActivity(Context context, boolean horizontal, boolean withDivider) {
         Intent i = new Intent(context, DragActivity.class);
         i.putExtra(KEY_HORIZONTAL, horizontal);
+        i.putExtra(KEY_DIVIDER, withDivider);
         context.startActivity(i);
     }
 
@@ -44,10 +57,13 @@ public class DragActivity extends ActionBarActivity {
         setContentView(R.layout.activity_drag);
 
         Bundle args = getIntent().getExtras();
-        if (args == null || !args.containsKey(KEY_HORIZONTAL)) {
+        if (args == null
+                || !args.containsKey(KEY_HORIZONTAL)
+                || !args.containsKey(KEY_DIVIDER)) {
             throw new IllegalArgumentException("Use start activity pattern");
         }
         boolean isHorizontal = args.getBoolean(KEY_HORIZONTAL);
+        boolean hasDivider = args.getBoolean(KEY_DIVIDER);
 
         // check is horizontal recycler view is wished
         int orientation = LinearLayoutManager.VERTICAL;
@@ -56,23 +72,42 @@ public class DragActivity extends ActionBarActivity {
         }
 
         // simulate data
-        ArrayList<DummyModel> models = new ArrayList<>();
-        for (int i = 0; i < 30; i++) {
-            models.add(new DummyModel("Model " + i));
-        }
+        this.models = initData(hasDivider);
 
         RecyclerView recyclerView = ((RecyclerView) findViewById(R.id.activity_drag_recycler_view));
         recyclerView.setLayoutManager(new LinearLayoutManager(this, orientation, false));
         recyclerView.setHasFixedSize(true);
 
-        DummyAdapter adapter = new DummyAdapter(models);
+        DummyAdapter adapter = new DummyAdapter(this.models);
         recyclerView.setAdapter(adapter);
 
-        DragDropGesture.Builder builder = new DragDropGesture.Builder().on(recyclerView).with(adapter);
+        DragDropGesture.Builder builder = new DragDropGesture.Builder()
+                .on(recyclerView)
+                .apply(new DummyDragStrategy());
+
         if (isHorizontal) {
             builder.horizontal();
         }
         builder.build();
+    }
+
+    /**
+     * Init internal model.
+     *
+     * @param hasDivider true id divider should be added.
+     * @return true;
+     */
+    private ArrayList<DummyModel> initData(boolean hasDivider) {
+        ArrayList<DummyModel> models = new ArrayList<>();
+        for (int i = 0; i < 30; i++) {
+            models.add(new DummyModel("Model " + i));
+        }
+
+        if (hasDivider) {
+            models.get(2).isDivider = true;
+            models.get(28).isDivider = true;
+        }
+        return models;
     }
 
     /**
@@ -82,8 +117,11 @@ public class DragActivity extends ActionBarActivity {
 
         public String text;
 
+        public boolean isDivider;
+
         public DummyModel(String text) {
             this.text = text;
+            this.isDivider = false;
         }
     }
 
@@ -104,7 +142,7 @@ public class DragActivity extends ActionBarActivity {
     /**
      * Dummy adapter.
      */
-    private static class DummyAdapter extends RecyclerArrayAdapter<DummyModel, DummyViewHolder> {
+    private static class DummyAdapter extends SwappableAdapter<DummyModel, DummyViewHolder> {
 
         public DummyAdapter(ArrayList<DummyModel> items) {
             super(items);
@@ -121,6 +159,28 @@ public class DragActivity extends ActionBarActivity {
         public void onBindViewHolder(DummyViewHolder viewHolder, final int position) {
             DummyModel model = getItem(position);
             viewHolder.text.setText(model.text);
+            if (model.isDivider) {
+                viewHolder.text.setTextColor(Color.BLACK);
+            } else {
+                viewHolder.text.setTextColor(Color.WHITE);
+            }
+        }
+    }
+
+    /**
+     * Dummy strategy used to disable drag on divider.
+     */
+    private class DummyDragStrategy extends DragStrategy {
+        @Override
+        public boolean isItemDraggable(int position) {
+            DummyModel model = models.get(position);
+            return !model.isDivider;
+        }
+
+        @Override
+        public boolean isItemHoverable(int position) {
+            DummyModel model = models.get(position);
+            return !model.isDivider;
         }
     }
 }

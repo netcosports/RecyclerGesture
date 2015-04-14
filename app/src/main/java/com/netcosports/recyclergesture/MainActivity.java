@@ -16,7 +16,9 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         findViewById(R.id.main_activity_drag_horizontal).setOnClickListener(this);
+        findViewById(R.id.main_activity_drag_horizontal_divider).setOnClickListener(this);
         findViewById(R.id.main_activity_drag_vertical).setOnClickListener(this);
+        findViewById(R.id.main_activity_drag_vertical_divider).setOnClickListener(this);
     }
 
 
@@ -24,10 +26,16 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.main_activity_drag_horizontal:
-                DragActivity.startActivity(this, true);
+                DragActivity.startActivity(this, true, false);
                 break;
             case R.id.main_activity_drag_vertical:
-                DragActivity.startActivity(this, false);
+                DragActivity.startActivity(this, false, false);
+                break;
+            case R.id.main_activity_drag_vertical_divider:
+                DragActivity.startActivity(this, false, true);
+                break;
+            case R.id.main_activity_drag_horizontal_divider:
+                DragActivity.startActivity(this, true, true);
                 break;
             default:
                 break;

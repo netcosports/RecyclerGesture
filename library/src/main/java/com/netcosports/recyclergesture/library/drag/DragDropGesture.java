@@ -2,7 +2,6 @@ package com.netcosports.recyclergesture.library.drag;
 
 import android.support.v7.widget.RecyclerView;
 
-import com.netcosports.recyclergesture.library.RecyclerArrayAdapter;
 import com.netcosports.recyclergesture.library.RecyclerGesture;
 
 /**
@@ -10,6 +9,21 @@ import com.netcosports.recyclergesture.library.RecyclerGesture;
  * {@link android.support.v7.widget.RecyclerView}
  */
 public final class DragDropGesture extends RecyclerGesture {
+
+    /**
+     * Dummy listener.
+     */
+    private static Listener sDummyListener = new Listener() {
+        @Override
+        public void onDragStarted() {
+
+        }
+
+        @Override
+        public void onDragEnded() {
+
+        }
+    };
 
     /**
      * Manager which process gesture detection.
@@ -32,11 +46,18 @@ public final class DragDropGesture extends RecyclerGesture {
      *
      * @param recyclerView recyclerView on which gesture is detected.
      * @param adapter      data of the recyclerView.
-     * @param orientation  recyclerView orientation.
+     * @param swapper      process to the swap.
+     * @param dragBehavior behavior to adopt while dragging.
+     * @param strategy     drag strategy.
+     * @param listener     listener used to catch motion events.
      */
-    private DragDropGesture(RecyclerView recyclerView, RecyclerArrayAdapter adapter, int orientation) {
+    private DragDropGesture(RecyclerView recyclerView, RecyclerView.Adapter adapter, Swapper swapper,
+                            DragBehavior dragBehavior, DragStrategy strategy, Listener listener) {
         super();
-        dragDropListener = new DragDropListener(recyclerView, adapter, orientation);
+
+        dragDropListener
+          = new DragDropListener(recyclerView, adapter, swapper, dragBehavior, strategy, listener);
+
         recyclerView.addOnItemTouchListener(dragDropListener);
     }
 
@@ -59,12 +80,27 @@ public final class DragDropGesture extends RecyclerGesture {
         /**
          * Currently only works with ArrayList based adapter.
          */
-        private RecyclerArrayAdapter recyclerArrayAdapter;
+        private RecyclerView.Adapter recyclerArrayAdapter;
 
         /**
          * Gesture orientation.
          */
-        private int orientation;
+        private DragBehavior dragBehavior;
+
+        /**
+         * Define which items are draggable.
+         */
+        private DragStrategy dragStrategy;
+
+        /**
+         * Object used to swap object.
+         */
+        private Swapper swapper;
+
+        /**
+         * Listener used to catch motion events.
+         */
+        private Listener listener;
 
         /**
          * Builder pattern.
@@ -72,28 +108,41 @@ public final class DragDropGesture extends RecyclerGesture {
         public Builder() {
             this.attachedRecyclerView = null;
             this.recyclerArrayAdapter = null;
-            orientation = DragDropListener.ORIENTATION_VERTICAL;
+            this.dragBehavior = null;
+            this.dragStrategy = null;
+            this.swapper = null;
+            this.listener = sDummyListener;
         }
 
         /**
          * Attach the gesture to the recycler view.
+         * <p/>
+         * Note : the recycler adapter must implements
+         * {@link com.netcosports.recyclergesture.library.drag.DragDropGesture.Swapper} interface to
+         * proceed to the swapping.
          *
          * @param target recycler view on which the drag and drop gesture will be attached.
          * @return builder to chain param.
          */
         public Builder on(RecyclerView target) {
             this.attachedRecyclerView = target;
+            this.recyclerArrayAdapter = this.attachedRecyclerView.getAdapter();
+            if (!(this.recyclerArrayAdapter instanceof Swapper)) {
+                throw new IllegalArgumentException("RecyclerView adapter must implement Swapper"
+                  + " interface to proceed to the data swapping");
+            }
+            this.swapper = ((Swapper) this.recyclerArrayAdapter);
             return this;
         }
 
         /**
-         * Currently drag an drop works only on ArrayList based adapter.
+         * Apply drag strategy to customize which items are draggable.
          *
-         * @param adapter adapter attached to the recycler view.
+         * @param strategy drag strategy.
          * @return builder to chain param.
          */
-        public Builder with(RecyclerArrayAdapter adapter) {
-            this.recyclerArrayAdapter = adapter;
+        public Builder apply(DragStrategy strategy) {
+            this.dragStrategy = strategy;
             return this;
         }
 
@@ -103,7 +152,7 @@ public final class DragDropGesture extends RecyclerGesture {
          * @return builder to chain param.
          */
         public Builder horizontal() {
-            this.orientation = DragDropListener.ORIENTATION_HORIZONTAL;
+            this.dragBehavior = new DragBehaviorHorizontal();
             return this;
         }
 
@@ -113,7 +162,23 @@ public final class DragDropGesture extends RecyclerGesture {
          * @return builder to chain param.
          */
         public Builder vertical() {
-            this.orientation = DragDropListener.ORIENTATION_VERTICAL;
+            this.dragBehavior = new DragBehaviorVertical();
+            return this;
+        }
+
+
+        /**
+         * Register a listener to catch the motions events
+         *
+         * @param listener listener to register.
+         * @return builder to chain param.
+         */
+        public Builder register(Listener listener) {
+            if (listener == null) {
+                this.listener = sDummyListener;
+            } else {
+                this.listener = listener;
+            }
             return this;
         }
 
@@ -131,7 +196,47 @@ public final class DragDropGesture extends RecyclerGesture {
                 throw new IllegalStateException("Recycler view can't be null, see Builder.on(recyclerView)");
             }
 
-            return new DragDropGesture(this.attachedRecyclerView, this.recyclerArrayAdapter, this.orientation);
+            if (this.dragBehavior == null) {
+                this.dragBehavior = new DragBehaviorVertical();
+            }
+
+            if (this.dragStrategy == null) {
+                this.dragStrategy = new DragStrategy();
+            }
+
+            return new DragDropGesture(this.attachedRecyclerView, this.recyclerArrayAdapter,
+              this.swapper, this.dragBehavior, this.dragStrategy, this.listener);
         }
+    }
+
+    /**
+     * Interface used to swap dragged item at the dropped position.
+     */
+    public interface Swapper {
+        /**
+         * Called when swap two items should be performed.
+         * <p/>
+         * private package.
+         *
+         * @param from src position.
+         * @param to   dest position.
+         */
+        public void swapPositions(int from, int to);
+
+    }
+
+    /**
+     * Listener used to catch {@link DragDropGesture} events.
+     */
+    public interface Listener {
+        /**
+         * Called when the drag motion started.
+         */
+        void onDragStarted();
+
+        /**
+         * Called when the drag motion ended.
+         */
+        void onDragEnded();
     }
 }

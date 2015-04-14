@@ -26,11 +26,8 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewPropertyAnimator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-
-import com.netcosports.recyclergesture.library.RecyclerArrayAdapter;
 
 
 /**
@@ -42,21 +39,12 @@ import com.netcosports.recyclergesture.library.RecyclerArrayAdapter;
 class DragDropListener implements RecyclerView.OnItemTouchListener {
 
     /**
-     * Horizontal recycler view.
-     * package private.
+     * Switch motion delay in milliseconds.
      */
-    static final int ORIENTATION_HORIZONTAL = 0x00000001;
-
-    /**
-     * Vertical recycler view.
-     * package private.
-     */
-    static final int ORIENTATION_VERTICAL = 0x00000002;
-
     private static final int MOVE_DURATION = 150;
 
     private RecyclerView recyclerView;
-    private RecyclerArrayAdapter adapter;
+    private RecyclerView.Adapter adapter;
 
     private final int scrollAmount;
     private int downY = -1;
@@ -95,9 +83,44 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
     private boolean isScrolling;
 
     /**
-     * Current orientation.
+     * Behavior to adopt while dragging.
      */
-    private int orientation;
+    private DragBehavior dragBehavior;
+
+    /**
+     * Strategy used to enable or disable drag on specific items.
+     */
+    private DragStrategy dragStrategy;
+
+    /**
+     * View holder of the previous item which can't be crossed while dragging.
+     */
+    private RecyclerView.ViewHolder previousDividerViewHolder;
+
+    /**
+     * Index of the previous item which can't be hovered.
+     */
+    private int previousDividerPosition;
+
+    /**
+     * View holder of the next item which can't be crossed while dragging.
+     */
+    private RecyclerView.ViewHolder nextDividerViewHolder;
+
+    /**
+     * Index of the next item which can't be hovered.
+     */
+    private int nextDividerPosition;
+
+    /**
+     * Swapper used to swap data once an item is dropped.
+     */
+    private DragDropGesture.Swapper swapper;
+
+    /**
+     * Listener used to catch drag and drop motion.
+     */
+    private DragDropGesture.Listener listener;
 
 
     /**
@@ -105,20 +128,20 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
      *
      * @param recyclerView recycler view on which listener will be applied.
      * @param adapter      adapter.
-     * @param orientation  recycler view orientation.
+     * @param swapper      swapper used to swap items model once a drop event happened.
+     * @param dragBehavior behavior to adopt while dragging.
+     * @param dragStrategy strategy used to enable drag on items.
+     * @param listener     listener used to catch motion events.
      */
-    public DragDropListener(RecyclerView recyclerView, RecyclerArrayAdapter adapter, int orientation) {
-        switch (orientation) {
-            case ORIENTATION_HORIZONTAL:
-            case ORIENTATION_VERTICAL:
-                this.orientation = orientation;
-                break;
-            default:
-                throw new IllegalArgumentException("Orientation unknown");
-        }
-
+    public DragDropListener(RecyclerView recyclerView, RecyclerView.Adapter adapter
+      , DragDropGesture.Swapper swapper, DragBehavior dragBehavior, DragStrategy dragStrategy
+      , DragDropGesture.Listener listener) {
+        this.dragBehavior = dragBehavior;
         this.recyclerView = recyclerView;
+        this.dragStrategy = dragStrategy;
         this.adapter = adapter;
+        this.swapper = swapper;
+        this.listener = listener;
 
         dragging = false;
 
@@ -130,6 +153,11 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
 
         // init auto scroller used to scroll while dragging.
         autoScroller = new AutoScroller();
+
+        this.previousDividerViewHolder = null;
+        this.nextDividerViewHolder = null;
+        this.previousDividerPosition = -1;
+        this.nextDividerPosition = -1;
     }
 
     @Override
@@ -197,25 +225,73 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
 
     private void startDrag() {
         View viewUnder = recyclerView.findChildViewUnder(downX, downY);
+        mobileViewCurrentPos = recyclerView.getChildPosition(viewUnder);
         if (viewUnder == null) {
             return;
         }
+
+        // check strategy to know if the current item is draggable.
+        if (!dragStrategy.isItemDraggable(mobileViewCurrentPos)) {
+            return;
+        }
+
         dragging = true;
 
-        mobileViewCurrentPos = recyclerView.getChildPosition(viewUnder);
+        // get closest divider index to block the drag if needed
+        findClosestDivider();
 
+        // initialize the view used as thumbnail while dragging.
         mobileView = getDraggingView(viewUnder);
-        mobileView.setX(viewUnder.getX());
-        mobileView.setY(viewUnder.getY());
+        mobileView.setX(viewUnder.getLeft() + recyclerView.getLeft());
+        mobileView.setY(viewUnder.getTop() + recyclerView.getTop());
         mobileViewStartY = mobileView.getY();
         mobileViewStartX = mobileView.getX();
 
         ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+          ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         ((ViewGroup) recyclerView.getParent()).addView(mobileView, lp);
         mobileView.bringToFront();
         viewUnder.setVisibility(View.INVISIBLE);
+        listener.onDragStarted();
+    }
 
+    /**
+     * Find closest divider when drag start.
+     * <p/>
+     * Divider are items which can't be hovered by a drag motion.
+     * <p/>
+     * See also :
+     * {@link com.netcosports.recyclergesture.library.drag.DragStrategy#isItemHoverable(int)}
+     */
+    private void findClosestDivider() {
+        previousDividerViewHolder = null;
+        nextDividerViewHolder = null;
+        previousDividerPosition = -1;
+        nextDividerPosition = -1;
+        for (int i = 0; i < recyclerView.getAdapter().getItemCount(); i++) {
+            boolean isHoverable = dragStrategy.isItemHoverable(i);
+            // if hoverable, not a divider, go to the next.
+            if (isHoverable) {
+                continue;
+            }
+
+            if (i < mobileViewCurrentPos) {
+                if (previousDividerPosition == -1) {
+                    previousDividerPosition = i;
+                } else if (i > previousDividerPosition) {
+                    previousDividerPosition = i;
+                }
+            } else if (i > mobileViewCurrentPos) {
+                if (nextDividerPosition == -1) {
+                    nextDividerPosition = i;
+                } else if (i < nextDividerPosition) {
+                    nextDividerPosition = i;
+                }
+            }
+        }
+
+        previousDividerViewHolder = recyclerView.findViewHolderForPosition(previousDividerPosition);
+        nextDividerViewHolder = recyclerView.findViewHolderForPosition(nextDividerPosition);
     }
 
     private boolean down(MotionEvent event) {
@@ -232,74 +308,70 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
 
         int pointerIndex = event.findPointerIndex(activePointerId);
 
-        if (orientation == ORIENTATION_HORIZONTAL) {
-            int currentX = (int) event.getX(pointerIndex);
-            float deltaX = currentX - downX;
-            float mobileViewX = mobileViewStartX + deltaX;
-            mobileView.setTranslationX(mobileViewX);
-        } else if (orientation == ORIENTATION_VERTICAL) {
-            int currentY = (int) event.getY(pointerIndex);
-            float deltaY = currentY - downY;
-            float mobileViewY = mobileViewStartY + deltaY;
-            mobileView.setTranslationY(mobileViewY);
+        int currentX = (int) event.getX(pointerIndex);
+        float deltaX = currentX - downX;
+        float mobileViewX = mobileViewStartX + deltaX;
+
+        int currentY = (int) event.getY(pointerIndex);
+        float deltaY = currentY - downY;
+        float mobileViewY = mobileViewStartY + deltaY;
+
+
+        if (previousDividerViewHolder != null) {
+            View previousDivider = previousDividerViewHolder.itemView;
+            if (previousDivider != null
+              && dragBehavior.willHoverPreviousDivider(previousDivider, mobileViewX, mobileViewY)) {
+                return false;
+            }
         }
 
+        if (nextDividerViewHolder != null) {
+            View nextDivider = nextDividerViewHolder.itemView;
+            if (nextDivider != null
+              && dragBehavior.willHoverNextDivider(nextDivider, mobileViewX, mobileViewY)) {
+                return false;
+            }
+        }
 
-        switchViewsIfNeeded();
         scrollIfNeeded();
+
+        dragBehavior.move(mobileViewX, mobileViewY, mobileView);
+
+        // is scrolling, switch will be handle by the auto scroller since
+        // view will be recycled, closest divider should be refreshed.
+        if (!isScrolling) {
+            switchViewsIfNeeded();
+        }
+
         return true;
     }
 
     private void switchViewsIfNeeded() {
         int pos = mobileViewCurrentPos;
-        int abovePos = pos - 1;
-        int belowPos = pos + 1;
+        int previousPos = pos - 1;
+        int nextPos = pos + 1;
 
-        View previousView = getViewByPosition(abovePos);
-        View nextView = getViewByPosition(belowPos);
+        View previousView = getViewByPosition(previousPos);
+        View nextView = getViewByPosition(nextPos);
 
-
-        if (orientation == ORIENTATION_VERTICAL) {
-            int mobileViewY = (int) mobileView.getY();
-            if (previousView != null && previousView.getY() > -1 && mobileViewY < previousView.getY()) {
-                doSwitch(previousView, pos, abovePos);
-            }
-            if (nextView != null && nextView.getY() > -1 && mobileViewY > nextView.getY()) {
-                doSwitch(nextView, pos, belowPos);
-            }
-        } else if (orientation == ORIENTATION_HORIZONTAL) {
-            int mobileViewX = (int) mobileView.getX();
-            if (previousView != null && previousView.getX() > -1 && mobileViewX < previousView.getX()) {
-                doSwitch(previousView, pos, abovePos);
-            }
-            if (nextView != null && nextView.getX() > -1 && mobileViewX > nextView.getX()) {
-                doSwitch(nextView, pos, belowPos);
-            }
+        if (dragBehavior.shouldSwitchWithPrevious(mobileView, previousView)) {
+            doSwitch(previousView, pos, previousPos);
+        } else if (dragBehavior.shouldSwitchWithNext(mobileView, nextView)) {
+            doSwitch(nextView, pos, nextPos);
         }
     }
 
     private void doSwitch(final View switchView, final int originalViewPos, final int switchViewPos) {
         View originalView = getViewByPosition(originalViewPos);
 
-
-        onItemSwitch(recyclerView, originalViewPos, switchViewPos);
+        onItemSwitch(originalViewPos, switchViewPos);
 
         switchView.setVisibility(View.INVISIBLE);
         originalView.setVisibility(View.VISIBLE);
 
-        if (orientation == ORIENTATION_VERTICAL) {
-            int switchViewTop = switchView.getTop();
-            int originalViewTop = originalView.getTop();
-            int delta = originalViewTop - switchViewTop;
-            originalView.setTranslationY(-delta);
-            originalView.animate().translationYBy(delta).setDuration(MOVE_DURATION);
-        } else if (orientation == ORIENTATION_HORIZONTAL) {
-            int switchViewLeft = switchView.getLeft();
-            int originalViewLeft = originalView.getLeft();
-            int delta = originalViewLeft - switchViewLeft;
-            originalView.setTranslationX(-delta);
-            originalView.animate().translationXBy(delta).setDuration(MOVE_DURATION);
-        }
+        dragBehavior.getSwitchAnimator(originalView, switchView)
+          .setDuration(MOVE_DURATION);
+
         mobileViewCurrentPos = switchViewPos;
     }
 
@@ -319,51 +391,41 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
     private void endDrag() {
         final View view = getViewByPosition(mobileViewCurrentPos);
         if (view != null && mobileView != null) {
-            ViewPropertyAnimator animator = mobileView.animate();
 
-            if (orientation == ORIENTATION_VERTICAL) {
-                float y = view.getY();
-                animator.translationY(y).setDuration(MOVE_DURATION);
-            } else if (orientation == ORIENTATION_HORIZONTAL) {
-                float x = view.getX();
-                animator.translationX(x).setDuration(MOVE_DURATION);
-            }
-
-            animator.setListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    view.setVisibility(View.VISIBLE);
-                    if (mobileView != null) {
-                        ViewGroup parent = (ViewGroup) mobileView.getParent();
-                        parent.removeView(mobileView);
-                        draggingThumbnail.recycle();
-                        draggingThumbnail = null;
-                        mobileView = null;
-                        recyclerView.removeCallbacks(autoScroller);
-                    }
-                }
-            });
-            animator.start();
-
+            dragBehavior.getDropAnimator(mobileView, view)
+              .setDuration(MOVE_DURATION)
+              .setListener(new AnimatorListenerAdapter() {
+                  @Override
+                  public void onAnimationEnd(Animator animation) {
+                      view.setVisibility(View.VISIBLE);
+                      if (mobileView != null) {
+                          ViewGroup parent = (ViewGroup) mobileView.getParent();
+                          parent.removeView(mobileView);
+                          draggingThumbnail.recycle();
+                          draggingThumbnail = null;
+                          mobileView = null;
+                          recyclerView.removeCallbacks(autoScroller);
+                      }
+                  }
+              })
+              .start();
         }
 
         dragging = false;
         mobileViewStartY = -1;
         mobileViewStartX = -1;
         mobileViewCurrentPos = -1;
-
+        listener.onDragEnded();
     }
 
     /**
-     * Implementation usually do 2 things: change positions of items in RecyclerView.Adapter and
-     * notify it about changes
+     * propagate the switch to the adapter.
      *
-     * @param recyclerView view the item is being dragged in
-     * @param from         original (start) drag position within adapter
-     * @param to           new drag position withing adapter
+     * @param from original (start) drag position within adapter
+     * @param to   new drag position withing adapter
      */
-    private void onItemSwitch(RecyclerView recyclerView, int from, int to) {
-        adapter.swapPositions(from, to);
+    private void onItemSwitch(int from, int to) {
+        swapper.swapPositions(from, to);
         adapter.notifyItemChanged(to);
     }
 
@@ -372,39 +434,28 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
         return viewHolder == null ? null : viewHolder.itemView;
     }
 
+    /**
+     * Scroll the recycler view while dragging if needed.
+     * <p/>
+     * See also :
+     * {@link DragBehavior#shouldStartScrollingToStart(android.view.View, android.view.View)}
+     * {@link DragBehavior#shouldStartScrollingToEnd(android.view.View, android.view.View)}
+     *
+     * @return true if the recycler view is being scrolled
+     */
     private boolean scrollIfNeeded() {
 
-        int hoverViewPosition = 0;
-        int hoverViewSize = 0;
-        int previousBoundary = 0;
-        int nextBoundary = 0;
+        boolean shouldScrollToStart = dragBehavior.shouldStartScrollingToStart(recyclerView, mobileView);
+        boolean shouldScrollToEnd = dragBehavior.shouldStartScrollingToEnd(recyclerView, mobileView);
 
-        if (orientation == ORIENTATION_VERTICAL) {
-            previousBoundary = 0;
-            nextBoundary = recyclerView.getHeight();
-            hoverViewSize = mobileView.getHeight();
-            hoverViewPosition = (int) mobileView.getY();
-        } else if (orientation == ORIENTATION_HORIZONTAL) {
-            previousBoundary = 0;
-            nextBoundary = recyclerView.getWidth();
-            hoverViewSize = mobileView.getWidth();
-            hoverViewPosition = (int) mobileView.getX();
-        }
-
-        if (hoverViewPosition <= previousBoundary && !isScrolling) {
-            isScrolling = true;
+        if (shouldScrollToStart && !isScrolling) {
             autoScroller.startScrolling(AutoScroller.START);
-            return true;
-        } else if (hoverViewPosition + hoverViewSize >= nextBoundary && !isScrolling) {
-            isScrolling = true;
+        } else if (shouldScrollToEnd && !isScrolling) {
             autoScroller.startScrolling(AutoScroller.END);
-            return true;
-        } else if (hoverViewPosition >= previousBoundary && hoverViewPosition + hoverViewSize
-                <= nextBoundary && isScrolling) {
+        } else if (!shouldScrollToEnd && !shouldScrollToStart && isScrolling) {
             autoScroller.stopScrolling();
-            isScrolling = false;
         }
-        return false;
+        return isScrolling;
     }
 
     /**
@@ -479,25 +530,53 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
             if (direction != START && direction != END) {
                 throw new IllegalArgumentException("Direction unknown");
             }
+            isScrolling = true;
             this.direction = direction;
             recyclerView.post(this);
-
         }
 
         public void stopScrolling() {
+            isScrolling = false;
             recyclerView.removeCallbacks(this);
         }
 
         @Override
         public void run() {
-            if (orientation == ORIENTATION_VERTICAL) {
-                recyclerView.scrollBy(0, direction * scrollAmount);
-                recyclerView.post(this);
-            } else if (orientation == ORIENTATION_HORIZONTAL) {
-                recyclerView.scrollBy(direction * scrollAmount, 0);
-                recyclerView.post(this);
+            dragBehavior.scroll(recyclerView, direction * scrollAmount);
+
+            float nextX = mobileView.getX() + direction * scrollAmount;
+            float nextY = mobileView.getY() + direction * scrollAmount;
+
+            if (previousDividerPosition != -1) {
+                previousDividerViewHolder = recyclerView.findViewHolderForPosition(previousDividerPosition);
             }
 
+            if (nextDividerPosition != -1) {
+                nextDividerViewHolder = recyclerView.findViewHolderForPosition(nextDividerPosition);
+            }
+
+            if (previousDividerViewHolder != null) {
+                View previousDivider = previousDividerViewHolder.itemView;
+                if (previousDivider != null
+                  && dragBehavior.willHoverPreviousDivider(previousDivider, nextX, nextY)) {
+                    // stop scrolling when blocked by a divider
+                    isScrolling = false;
+                    return;
+                }
+            }
+
+            if (nextDividerViewHolder != null) {
+                View nextDivider = nextDividerViewHolder.itemView;
+                if (nextDivider != null
+                  && dragBehavior.willHoverNextDivider(nextDivider, nextX, nextY)) {
+                    // stop scrolling when blocked by a divider
+                    isScrolling = false;
+                    return;
+                }
+            }
+
+            switchViewsIfNeeded();
+            recyclerView.post(this);
         }
     }
 }
