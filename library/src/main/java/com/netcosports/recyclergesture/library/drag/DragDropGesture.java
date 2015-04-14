@@ -11,6 +11,21 @@ import com.netcosports.recyclergesture.library.RecyclerGesture;
 public final class DragDropGesture extends RecyclerGesture {
 
     /**
+     * Dummy listener.
+     */
+    private static Listener sDummyListener = new Listener() {
+        @Override
+        public void onDragStarted() {
+
+        }
+
+        @Override
+        public void onDragEnded() {
+
+        }
+    };
+
+    /**
      * Manager which process gesture detection.
      */
     private DragDropListener dragDropListener;
@@ -34,11 +49,15 @@ public final class DragDropGesture extends RecyclerGesture {
      * @param swapper      process to the swap.
      * @param dragBehavior behavior to adopt while dragging.
      * @param strategy     drag strategy.
+     * @param listener     listener used to catch motion events.
      */
     private DragDropGesture(RecyclerView recyclerView, RecyclerView.Adapter adapter, Swapper swapper,
-                            DragBehavior dragBehavior, DragStrategy strategy) {
+                            DragBehavior dragBehavior, DragStrategy strategy, Listener listener) {
         super();
-        dragDropListener = new DragDropListener(recyclerView, adapter, swapper, dragBehavior, strategy);
+
+        dragDropListener
+          = new DragDropListener(recyclerView, adapter, swapper, dragBehavior, strategy, listener);
+
         recyclerView.addOnItemTouchListener(dragDropListener);
     }
 
@@ -79,6 +98,11 @@ public final class DragDropGesture extends RecyclerGesture {
         private Swapper swapper;
 
         /**
+         * Listener used to catch motion events.
+         */
+        private Listener listener;
+
+        /**
          * Builder pattern.
          */
         public Builder() {
@@ -87,6 +111,7 @@ public final class DragDropGesture extends RecyclerGesture {
             this.dragBehavior = null;
             this.dragStrategy = null;
             this.swapper = null;
+            this.listener = sDummyListener;
         }
 
         /**
@@ -104,7 +129,7 @@ public final class DragDropGesture extends RecyclerGesture {
             this.recyclerArrayAdapter = this.attachedRecyclerView.getAdapter();
             if (!(this.recyclerArrayAdapter instanceof Swapper)) {
                 throw new IllegalArgumentException("RecyclerView adapter must implement Swapper"
-                        + " interface to proceed to the data swapping");
+                  + " interface to proceed to the data swapping");
             }
             this.swapper = ((Swapper) this.recyclerArrayAdapter);
             return this;
@@ -141,6 +166,22 @@ public final class DragDropGesture extends RecyclerGesture {
             return this;
         }
 
+
+        /**
+         * Register a listener to catch the motions events
+         *
+         * @param listener listener to register.
+         * @return builder to chain param.
+         */
+        public Builder register(Listener listener) {
+            if (listener == null) {
+                this.listener = sDummyListener;
+            } else {
+                this.listener = listener;
+            }
+            return this;
+        }
+
         /**
          * Build the gesture based on builder param.
          *
@@ -164,7 +205,7 @@ public final class DragDropGesture extends RecyclerGesture {
             }
 
             return new DragDropGesture(this.attachedRecyclerView, this.recyclerArrayAdapter,
-                    this.swapper, this.dragBehavior, this.dragStrategy);
+              this.swapper, this.dragBehavior, this.dragStrategy, this.listener);
         }
     }
 
@@ -182,5 +223,20 @@ public final class DragDropGesture extends RecyclerGesture {
          */
         public void swapPositions(int from, int to);
 
+    }
+
+    /**
+     * Listener used to catch {@link DragDropGesture} events.
+     */
+    public interface Listener {
+        /**
+         * Called when the drag motion started.
+         */
+        void onDragStarted();
+
+        /**
+         * Called when the drag motion ended.
+         */
+        void onDragEnded();
     }
 }

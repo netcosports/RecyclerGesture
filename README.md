@@ -65,6 +65,34 @@ Then just apply the Drag&Drop strategy :
                 .build();
 ```
 
+###Listener
+Define your own Listener to implement specific behaviour according to drag&drop events:
+```java
+    /**
+     * Dummy drag&drop listener.
+     */
+    private class DummyListener implements DragDropGesture.Listener{
+
+            @Override
+            public void onDragStarted() {
+
+            }
+
+            @Override
+            public void onDragEnded() {
+
+            }
+        }
+```
+
+Then just register the Drag&Drop listener:
+```java
+    DragDropGesture.Builder builder = new DragDropGesture.Builder()
+                .on(recyclerView)
+                .register(new DummyListener())
+                .build();
+```
+
 # Contribution
 PR are welcomed (= !
 

@@ -117,6 +117,11 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
      */
     private DragDropGesture.Swapper swapper;
 
+    /**
+     * Listener used to catch drag and drop motion.
+     */
+    private DragDropGesture.Listener listener;
+
 
     /**
      * Drag and drop listener.
@@ -126,14 +131,17 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
      * @param swapper      swapper used to swap items model once a drop event happened.
      * @param dragBehavior behavior to adopt while dragging.
      * @param dragStrategy strategy used to enable drag on items.
+     * @param listener     listener used to catch motion events.
      */
     public DragDropListener(RecyclerView recyclerView, RecyclerView.Adapter adapter
-            , DragDropGesture.Swapper swapper, DragBehavior dragBehavior, DragStrategy dragStrategy) {
+      , DragDropGesture.Swapper swapper, DragBehavior dragBehavior, DragStrategy dragStrategy
+      , DragDropGesture.Listener listener) {
         this.dragBehavior = dragBehavior;
         this.recyclerView = recyclerView;
         this.dragStrategy = dragStrategy;
         this.adapter = adapter;
         this.swapper = swapper;
+        this.listener = listener;
 
         dragging = false;
 
@@ -240,10 +248,11 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
         mobileViewStartX = mobileView.getX();
 
         ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+          ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         ((ViewGroup) recyclerView.getParent()).addView(mobileView, lp);
         mobileView.bringToFront();
         viewUnder.setVisibility(View.INVISIBLE);
+        listener.onDragStarted();
     }
 
     /**
@@ -311,7 +320,7 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
         if (previousDividerViewHolder != null) {
             View previousDivider = previousDividerViewHolder.itemView;
             if (previousDivider != null
-                    && dragBehavior.willHoverPreviousDivider(previousDivider, mobileViewX, mobileViewY)) {
+              && dragBehavior.willHoverPreviousDivider(previousDivider, mobileViewX, mobileViewY)) {
                 return false;
             }
         }
@@ -319,7 +328,7 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
         if (nextDividerViewHolder != null) {
             View nextDivider = nextDividerViewHolder.itemView;
             if (nextDivider != null
-                    && dragBehavior.willHoverNextDivider(nextDivider, mobileViewX, mobileViewY)) {
+              && dragBehavior.willHoverNextDivider(nextDivider, mobileViewX, mobileViewY)) {
                 return false;
             }
         }
@@ -361,7 +370,7 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
         originalView.setVisibility(View.VISIBLE);
 
         dragBehavior.getSwitchAnimator(originalView, switchView)
-                .setDuration(MOVE_DURATION);
+          .setDuration(MOVE_DURATION);
 
         mobileViewCurrentPos = switchViewPos;
     }
@@ -384,29 +393,29 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
         if (view != null && mobileView != null) {
 
             dragBehavior.getDropAnimator(mobileView, view)
-                    .setDuration(MOVE_DURATION)
-                    .setListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            view.setVisibility(View.VISIBLE);
-                            if (mobileView != null) {
-                                ViewGroup parent = (ViewGroup) mobileView.getParent();
-                                parent.removeView(mobileView);
-                                draggingThumbnail.recycle();
-                                draggingThumbnail = null;
-                                mobileView = null;
-                                recyclerView.removeCallbacks(autoScroller);
-                            }
-                        }
-                    })
-                    .start();
+              .setDuration(MOVE_DURATION)
+              .setListener(new AnimatorListenerAdapter() {
+                  @Override
+                  public void onAnimationEnd(Animator animation) {
+                      view.setVisibility(View.VISIBLE);
+                      if (mobileView != null) {
+                          ViewGroup parent = (ViewGroup) mobileView.getParent();
+                          parent.removeView(mobileView);
+                          draggingThumbnail.recycle();
+                          draggingThumbnail = null;
+                          mobileView = null;
+                          recyclerView.removeCallbacks(autoScroller);
+                      }
+                  }
+              })
+              .start();
         }
 
         dragging = false;
         mobileViewStartY = -1;
         mobileViewStartX = -1;
         mobileViewCurrentPos = -1;
-
+        listener.onDragEnded();
     }
 
     /**
@@ -549,7 +558,7 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
             if (previousDividerViewHolder != null) {
                 View previousDivider = previousDividerViewHolder.itemView;
                 if (previousDivider != null
-                        && dragBehavior.willHoverPreviousDivider(previousDivider, nextX, nextY)) {
+                  && dragBehavior.willHoverPreviousDivider(previousDivider, nextX, nextY)) {
                     // stop scrolling when blocked by a divider
                     isScrolling = false;
                     return;
@@ -559,7 +568,7 @@ class DragDropListener implements RecyclerView.OnItemTouchListener {
             if (nextDividerViewHolder != null) {
                 View nextDivider = nextDividerViewHolder.itemView;
                 if (nextDivider != null
-                        && dragBehavior.willHoverNextDivider(nextDivider, nextX, nextY)) {
+                  && dragBehavior.willHoverNextDivider(nextDivider, nextX, nextY)) {
                     // stop scrolling when blocked by a divider
                     isScrolling = false;
                     return;
