@@ -3,9 +3,9 @@
 
     <string name="action_settings">Settings</string>
 
-    <string name="main_activity_button_horizontal_drag">Drag horizontal</string>
-    <string name="main_activity_button_vertical_drag">Drag vertical</string>
-    <string name="main_activity_button_horizontal_drag_divider">Drag horizontal with divider</string>
-    <string name="main_activity_button_vertical_drag_divider">Drag vertical with divider</string>
+    <string name="main_activity_button_horizontal_drag">Horizontal</string>
+    <string name="main_activity_button_vertical_drag">Vertical</string>
+    <string name="main_activity_button_horizontal_drag_divider">Horizontal with divider</string>
+    <string name="main_activity_button_vertical_drag_divider">Vertical with divider</string>
 
 </resources>
