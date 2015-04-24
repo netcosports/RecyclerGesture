@@ -14,6 +14,9 @@ import android.widget.TextView;
 
 import com.netcosports.recyclergesture.library.drag.DragDropGesture;
 import com.netcosports.recyclergesture.library.drag.DragStrategy;
+import com.netcosports.recyclergesture.library.swipe.SwipeToDismissDirection;
+import com.netcosports.recyclergesture.library.swipe.SwipeToDismissGesture;
+import com.netcosports.recyclergesture.library.swipe.SwipeToDismissStrategy;
 
 import java.util.ArrayList;
 
@@ -81,14 +84,22 @@ public class DragActivity extends ActionBarActivity {
         DummyAdapter adapter = new DummyAdapter(this.models);
         recyclerView.setAdapter(adapter);
 
-        DragDropGesture.Builder builder = new DragDropGesture.Builder()
+        DragDropGesture.Builder dragBuilder = new DragDropGesture.Builder()
                 .on(recyclerView)
                 .apply(new DummyDragStrategy());
 
+
+        SwipeToDismissDirection dismissDirection = SwipeToDismissDirection.HORIZONTAL;
         if (isHorizontal) {
-            builder.horizontal();
+            dragBuilder.horizontal();
+            dismissDirection = SwipeToDismissDirection.VERTICAL;
         }
-        builder.build();
+        dragBuilder.build();
+
+        new SwipeToDismissGesture.Builder(dismissDirection)
+                .on(recyclerView)
+                .apply(new DummySwipeStrategy())
+                .build();
     }
 
     /**
@@ -171,6 +182,7 @@ public class DragActivity extends ActionBarActivity {
      * Dummy strategy used to disable drag on divider.
      */
     private class DummyDragStrategy extends DragStrategy {
+
         @Override
         public boolean isItemDraggable(int position) {
             DummyModel model = models.get(position);
@@ -181,6 +193,22 @@ public class DragActivity extends ActionBarActivity {
         public boolean isItemHoverable(int position) {
             DummyModel model = models.get(position);
             return !model.isDivider;
+        }
+    }
+
+    /**
+     * Dummy swipe strategy used to disable swipe on divider.
+     */
+    private class DummySwipeStrategy extends SwipeToDismissStrategy {
+
+        @Override
+        public SwipeToDismissDirection getDismissDirection(int position) {
+            DummyModel model = models.get(position);
+            if (model.isDivider) {
+                return SwipeToDismissDirection.NONE;
+            } else {
+                return super.getDismissDirection(position);
+            }
         }
     }
 }
