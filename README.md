@@ -2,6 +2,7 @@
 Lightweight library used to easily attached simple gesture to a recycler view based on RecycleView.addOnItemTouchListener()
 
 * [Drag&Drop](#dragdrop)
+* [SwipeToDismiss](#swipetodismiss)
 
 #Drag&Drop
 
@@ -93,6 +94,61 @@ Then just register the Drag&Drop listener:
                 .build();
 ```
 
+#SwipeToDismiss
+
+SwipToDimiss gesture allow you to easily sort items displayed in your RecyclerView.
+
+No need to change or extend RecyclerView.
+
+No need to change or extend RecyclerView.Adapter.
+
+No need to replace/remove OnScrollListener if one is used.
+
+##Simple usage
+```java
+    new SwipeToDismissGesture.Builder(SwipeToDismissDirection.HORIZONTAL).on(recyclerView).build();
+```
+In addition your Adapter must implement the SwipeToDismissGesture.Dismisser interface to perfom the data deletion.
+
+For instance (if your Adapter is based on an ArrayList) :
+```java
+    @Override
+        public void dismiss(int position) {
+            dataList.remove(position);
+        }
+```
+
+##Features
+
+###Dividers
+Define your own SwipeToDismiss strategy in order to customize item "swapability" :
+```java
+    /**
+     * Dummy swipe strategy used to disable swipe on divider.
+     */
+    private class DummySwipeStrategy extends SwipeToDismissStrategy {
+
+        @Override
+        public SwipeToDismissDirection getDismissDirection(int position) {
+            DummyModel model = models.get(position);
+            if (model.isDivider) {
+                return SwipeToDismissDirection.NONE;
+            } else {
+                return super.getDismissDirection(position);
+            }
+        }
+    }
+```
+
+Then just apply the SwipeToDismiss strategy :
+```java
+    new SwipeToDismissGesture.Builder(SwipeToDismissDirection.HORIZONTAL)
+                    .on(recyclerView)
+                    .apply(new DummySwipeStrategy())
+                    .build();
+```
+
+
 # Contribution
 PR are welcomed (= !
 
@@ -108,6 +164,10 @@ Currently work with fixedSize item in the recycler view.
     recyclerView.setHasFixedSize(true);
 
 ```
+
+# TODO
+
+[SwipeToDismiss] provide undo feature.
 
 Currently don't work with LinearLayout as RecyclerView parent since dragging view is added to the
 parent view hierarchy. Works fine with RelativeLayout/FrameLayout.
