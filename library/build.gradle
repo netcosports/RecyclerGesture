@@ -31,9 +31,9 @@ dependencies {
 uploadArchives {
     repositories {
         mavenDeployer {
-            repository(url: "file:../maven/")
+            repository(url: "file:../../maven/")
             pom.groupId = "com.netcosports.recyclergesture"
-            pom.artifactId = 'recyclergesture'
+            pom.artifactId = 'library'
             pom.version = version
         }
     }
