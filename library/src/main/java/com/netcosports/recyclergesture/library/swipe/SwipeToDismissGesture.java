@@ -24,14 +24,18 @@ public final class SwipeToDismissGesture extends RecyclerGesture {
     /**
      * Simple swipe to dismiss gesture.
      *
-     * @param recycler  recycler view on which the gesture will be applied.
-     * @param direction swipe direction.
-     * @param strategy  dismiss strategy applied.
-     * @param dismisser dismisser which will perform the dismiss.
+     * @param recycler        recycler view on which the gesture will be applied.
+     * @param direction       swipe direction.
+     * @param strategy        dismiss strategy applied.
+     * @param dismisser       dismisser which will perform the dismiss.
+     * @param backgroundColor color displayed under swiped view when recycler background is transparent.
+     *                        -1 if none should be used.
      */
     private SwipeToDismissGesture(RecyclerView recycler, SwipeToDismissDirection direction,
-                                  SwipeToDismissStrategy strategy, Dismisser dismisser) {
-        mSwipeToDismissListener = new SwipeToDismissListener(recycler, direction, strategy, dismisser);
+                                  SwipeToDismissStrategy strategy, Dismisser dismisser, int backgroundColor) {
+        mSwipeToDismissListener
+            = new SwipeToDismissListener(recycler, direction, strategy, dismisser, backgroundColor);
+
         recycler.addOnItemTouchListener(mSwipeToDismissListener);
     }
 
@@ -66,6 +70,11 @@ public final class SwipeToDismissGesture extends RecyclerGesture {
         private SwipeToDismissDirection direction;
 
         /**
+         * background color used if the recycler view background is transparent.
+         */
+        private int color;
+
+        /**
          * Builder pattern for {@link SwipeToDismissGesture}
          *
          * @param direction Direction which will triggered the swipe-to-dismiss motion.
@@ -81,6 +90,7 @@ public final class SwipeToDismissGesture extends RecyclerGesture {
             recyclerView = null;
             dismisser = null;
             strategy = null;
+            color = -1;
         }
 
         /**
@@ -97,7 +107,7 @@ public final class SwipeToDismissGesture extends RecyclerGesture {
             this.recyclerView = target;
             if (!(this.recyclerView.getAdapter() instanceof Dismisser)) {
                 throw new IllegalArgumentException("RecyclerView adapter must implement Dismisser"
-                        + " interface to proceed to the data swapping");
+                    + " interface to proceed to the data swapping");
             }
             this.dismisser = ((Dismisser) this.recyclerView.getAdapter());
             return this;
@@ -117,6 +127,19 @@ public final class SwipeToDismissGesture extends RecyclerGesture {
         }
 
         /**
+         * Color used to filled the space below the swiped view during the swipe motion.
+         * <p/>
+         * Should be used when the recycler view background is transparent for instance.
+         *
+         * @param backgroundColor color which will fill the empty space.
+         * @return builder to chain param.
+         */
+        public Builder backgroundColor(int backgroundColor) {
+            this.color = backgroundColor;
+            return this;
+        }
+
+        /**
          * Builder pattern.
          *
          * @return swipe to dismiss gesture instance.
@@ -130,7 +153,7 @@ public final class SwipeToDismissGesture extends RecyclerGesture {
                 throw new IllegalStateException("A swipe direction must be specified through withDirection");
             }
 
-            return new SwipeToDismissGesture(recyclerView, direction, strategy, dismisser);
+            return new SwipeToDismissGesture(recyclerView, direction, strategy, dismisser, color);
         }
     }
 

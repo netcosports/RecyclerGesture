@@ -73,15 +73,17 @@ public enum SwipeToDismissDirection {
         if (dismissStrategy == DismissStrategy.HORIZONTAL) {
             swipeView.animate()
                     .translationX(dismissStrategy.getTriggeredDismissDirection()
-                            * swipeView.getWidth())
+                        * swipeView.getWidth())
                     .alpha(0)
-                    .setDuration(duration);
+                    .setDuration(duration)
+                    .setListener(null);
         } else {
             swipeView.animate()
                     .translationY(dismissStrategy.getTriggeredDismissDirection()
-                            * swipeView.getHeight())
+                        * swipeView.getHeight())
                     .alpha(0)
-                    .setDuration(duration);
+                    .setDuration(duration)
+                    .setListener(null);
         }
     }
 
