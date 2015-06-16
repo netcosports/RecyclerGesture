@@ -4,6 +4,15 @@ Lightweight library used to easily attached simple gesture to a recycler view ba
 * [Drag&Drop](#dragdrop)
 * [SwipeToDismiss](#swipetodismiss)
 
+# Restrictions
+Currently only works with RecyclerView#hasFixedSize sets to true.
+
+```java
+
+    recyclerView.setHasFixedSize(true);
+
+```
+
 #Drag&Drop
 
 Drag&Drop gesture allow you to easily sort items displayed in your RecyclerView.
@@ -155,15 +164,6 @@ PR are welcomed (= !
 Try to fit the current naming convention.
 
 Ensure that gradlew :library:check succeeded before submitting any PR.
-
-# Restrictions
-Currently work with fixedSize item in the recycler view.
-
-```java
-
-    recyclerView.setHasFixedSize(true);
-
-```
 
 # TODO
 
